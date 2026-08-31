@@ -1,0 +1,10 @@
+# InterSci-KD Skill 辅助脚本运行时依赖
+#
+# 核心脚本：
+#   - score_evidence.py  — 纯标准库，无第三方依赖
+#   - search_papers.py   — 纯标准库（mock 模式）
+#   - scp_tools.py       — 需要 requests 库（调用 SCP MCP API）
+#
+# Python >= 3.8
+
+requests>=2.31.0

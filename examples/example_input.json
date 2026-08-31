@@ -1,0 +1,172 @@
+{
+  "single_paper_example": {
+    "content": "请分析这篇关于新型血糖仪的研究论文，生成技术需求规格书",
+    "papers": [
+      {
+        "title": "基于电化学传感器的无创血糖监测系统研究",
+        "abstract": "本研究开发了一种基于电化学传感器的无创血糖监测系统，通过皮肤间质液提取实现实时血糖检测。系统采用丝网印刷电极阵列，配合微流体芯片实现样本采集与分析。实验结果表明，该系统在3.9-16.7 mmol/L范围内的检测误差小于10%，响应时间小于30秒。",
+        "method": "采用三电极体系，工作电极修饰纳米金颗粒增强信号。微流体通道设计采用PDMS材料，通过毛细作用驱动流体。",
+        "data": "样本量：100例健康志愿者及50例糖尿病患者；检测范围：3.9-16.7 mmol/L；平均绝对误差：0.8 mmol/L；响应时间：25±5秒；稳定性：连续工作8小时误差<3%",
+        "conclusion": "该无创血糖监测系统具有良好的准确性和稳定性，有望替代传统指尖采血方法。"
+      }
+    ],
+    "evidence_sources": [
+      {
+        "type": "literature_review",
+        "confidence": "high",
+        "description": "基于电化学传感器的无创血糖监测系统研究",
+        "source": "paper"
+      }
+    ],
+    "project_context": {
+      "project_name": "无创血糖监测系统",
+      "target_market": "家用医疗设备",
+      "budget": "500万人民币",
+      "timeline": "18个月"
+    },
+    "conversation_history": []
+  },
+  "batch_compare_example": {
+    "content": "请对比这两篇关于心电监测的论文，分析技术路线差异",
+    "papers": [
+      {
+        "title": "基于深度学习的便携式心电监测系统",
+        "abstract": "本研究提出了一种基于卷积神经网络的便携式心电监测系统，实现心律失常实时检测。系统采用低功耗MCU和ECG传感器，支持蓝牙传输。",
+        "method": "采集12导联ECG信号，通过CNN模型进行特征提取和分类",
+        "data": "准确率：98.5%；功耗：15mW；采样率：500Hz；检测类型：5种心律失常",
+        "conclusion": "深度学习方法显著提高了心律失常检测的准确性"
+      },
+      {
+        "title": "基于传统信号处理的可穿戴心电监测设备",
+        "abstract": "本研究开发了基于自适应滤波和特征阈值的可穿戴心电监测设备，实现长时程心电监测。",
+        "method": "采用自适应噪声抵消和QRS波检测算法",
+        "data": "准确率：94.2%；功耗：8mW；采样率：250Hz；检测类型：3种心律失常",
+        "conclusion": "传统信号处理方法在低功耗场景下具有优势"
+      }
+    ],
+    "evidence_sources": [
+      {
+        "type": "literature_review",
+        "confidence": "high",
+        "description": "基于深度学习的便携式心电监测系统",
+        "source": "paper"
+      },
+      {
+        "type": "literature_review",
+        "confidence": "medium",
+        "description": "基于传统信号处理的可穿戴心电监测设备",
+        "source": "paper"
+      }
+    ],
+    "project_context": {
+      "project_name": "可穿戴心电监测设备",
+      "target_market": "运动健康",
+      "power_constraint": "单次充电使用7天"
+    },
+    "conversation_history": []
+  },
+  "rct_paper_example": {
+    "content": "请分析这篇RCT临床试验论文，生成技术需求规格书",
+    "papers": [
+      {
+        "title": "A Randomized Controlled Trial of a Novel Drug Delivery System",
+        "abstract": "This randomized controlled trial evaluated the efficacy and safety of a novel drug delivery system in 500 patients with type 2 diabetes. The primary endpoint was HbA1c reduction at 24 weeks. Results showed a statistically significant reduction compared to standard therapy (p < 0.001).",
+        "method": "Multi-center RCT with 1:1 randomization, double-blind design. Primary outcome measure was change in HbA1c from baseline to week 24.",
+        "data": "Sample size: 500 patients (250 per arm); Baseline HbA1c: 8.2% ± 1.1%; Treatment group HbA1c reduction: 1.5% ± 0.8%; Control group reduction: 0.8% ± 0.7%; p-value < 0.001; Adverse events: 15% vs 12%",
+        "conclusion": "The novel drug delivery system demonstrated superior efficacy with acceptable safety profile."
+      }
+    ],
+    "evidence_sources": [
+      {
+        "type": "RCT",
+        "confidence": "high",
+        "description": "A Randomized Controlled Trial of a Novel Drug Delivery System",
+        "source": "paper"
+      }
+    ],
+    "project_context": {
+      "project_name": "新型药物递送系统",
+      "target_market": "糖尿病治疗",
+      "regulatory_path": "FDA NDA submission"
+    },
+    "conversation_history": []
+  },
+  "empty_start_example": {
+    "content": "我想开发一个便携式的医疗影像设备，要求轻薄、快速、准确",
+    "papers": [],
+    "evidence_sources": [],
+    "project_context": {
+      "project_name": "便携式医疗影像设备",
+      "application": "急诊现场诊断"
+    },
+    "conversation_history": []
+  },
+  "benchmark_example": {
+    "content": "请对标市场上的竞品，分析我们的产品定位",
+    "papers": [],
+    "evidence_sources": [
+      {
+        "type": "competitor_whitepaper",
+        "confidence": "medium",
+        "description": "竞品A产品白皮书",
+        "source": "competitor"
+      },
+      {
+        "type": "competitor_whitepaper",
+        "confidence": "medium",
+        "description": "竞品B产品白皮书",
+        "source": "competitor"
+      },
+      {
+        "type": "industry_standard",
+        "confidence": "high",
+        "description": "输液泵行业标准YY 0451-2003",
+        "source": "standard"
+      }
+    ],
+    "project_context": {
+      "project_name": "智能输液泵",
+      "competitors": [
+        {
+          "name": "竞品A",
+          "accuracy": "±5%",
+          "price": "5000元",
+          "features": ["无线监控", "报警功能"]
+        },
+        {
+          "name": "竞品B",
+          "accuracy": "±3%",
+          "price": "8000元",
+          "features": ["智能调速", "远程控制", "药物库"]
+        }
+      ],
+      "internal_target": {
+        "accuracy": "±2%",
+        "price": "6000元"
+      }
+    },
+    "conversation_history": []
+  },
+  "incremental_update_example": {
+    "content": "只更新第3章系统硬约束中的总功耗参数，将目标值改为10W",
+    "papers": [],
+    "evidence_sources": [],
+    "project_context": {
+      "project_name": "无创血糖监测系统",
+      "current_version": "V1.0",
+      "update_target": "第三章系统硬约束"
+    },
+    "conversation_history": [
+      {
+        "role": "user",
+        "content": "请分析这篇关于新型血糖仪的研究论文",
+        "mode": "单篇论文"
+      },
+      {
+        "role": "assistant",
+        "content": "已生成V1.0版本规格书，包含系统硬约束等章节",
+        "mode": "单篇论文"
+      }
+    ]
+  }
+}

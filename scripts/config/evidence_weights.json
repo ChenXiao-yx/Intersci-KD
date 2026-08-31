@@ -1,0 +1,37 @@
+{
+  "evidence_weights": {
+    "FDA_NMPA": 5.0,
+    "CE_mark": 5.0,
+    "RCT": 5.0,
+    "Meta_analysis": 2.5,
+    "Industry_standard": 3.0,
+    "Patent": 3.0,
+    "NCBI_database": 2.5,
+    "Systematic_review": 2.0,
+    "ChEMBL_compound": 2.0,
+    "PubMed_literature": 2.0,
+    "Prototype_implementation": 1.5,
+    "Literature_review": 1.5,
+    "Algorithm_benchmark": 1.0,
+    "Animal_experiment": 1.0,
+    "Case_study": 1.0,
+    "In_vitro_study": 1.0,
+    "Simulation": 0.5,
+    "Expert_opinion": 0.5,
+    "News_report": 0.5
+  },
+  "default_weight": 0.3,
+  "confidence_multipliers": {
+    "high": 1.0,
+    "medium": 0.5,
+    "low": 0.25
+  },
+  "domain_map": {
+    "education": "social",
+    "psychology": "social",
+    "default": "biotech",
+    "biotech": "biotech",
+    "social": "social",
+    "business": "business"
+  }
+}
