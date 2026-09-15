@@ -95,7 +95,10 @@
 44. 🎚️ P1-1 core 证据门槛域级适配（方案 A）：evidence_weights.json 新增 core_evidence_threshold_by_domain（AI=1.5、hardware=2.0、material=2.0，域级优先回退全局 2.5）；score_evidence.py 新增 _resolve_core_threshold 并在输出暴露 core_evidence_threshold；AI/hardware/material 域以会议论文与原型实现为主，不再永远 insufficient；新增 papers_ai_conference fixture + TestAIDomain 测试（含 biotech 对照）；原 TestCoreEvidenceThreshold 改用 biotech 域验证全局门槛仍生效
 45. 🛡️ P1-2 指令性文字收口：output-template.md 指令统一收口到文件头部 SYSTEM INSTRUCTIONS 区块，删除分散的「此行是对 AI 的指令」注释；validate_output.py 新增第 20 项「指令性文字泄漏检测」（全档位硬门禁，含引用块）；四个黄金样本清除内嵌指令注释；SKILL.md/README/EXECUTION_CHECKLIST 同步 19→20 项
 46. ✂️ P1-3 SKILL.md 瘦身：317→200 行（-37%）；可脚本化规则移出（19 项校验清单详述/黑话术语对照表/无依据预测关键词表/标签密度/DOI 格式/去同质化，均由 validate_output.py 兜底）；保留判断逻辑（五种模式/闸口 3 规则/矩阵判定顺序/档位默认规则/自校验一行）；工具端点表移交 README.md；章节 6/7 合并压缩
-47. 🧪 P2-1 端到端回归 + 遵守率度量：新建 tests/regression/（tasks.json 9 任务 + run_regression.py + baseline.json + 4 个领域 fixture）；9 任务全 PASS，20 项校验遵守率基线全 1.0；低于 80% 的规则自动列入"优先删除或改脚本兑底"清单；测试套件 77→92 用例全绿
+47. 🧪 P2-1 端到端回归 + 遵守率度量：新建 tests/regression/（tasks.json 9 任务 + run_regression.py + baseline.json + 4 个领域 fixture）；9 任务全 PASS，20 项校验遵守率基线全 1.0；低于 80% 的规则自动列入"优先删除或改脚本兜底"清单；测试套件 77→92 用例全绿
+48. 🛡️ 一致性对账正则盲区修复（外部评估意见）：_check_tool_count_consistency 的匹配从「N 个 SCP」放宽到「N 个 SCP/数据工具/MCP 端点」白名单（不含裸「工具/端点」，避免「Sciverse 端点提供 2 个工具」误报）；_check_version_consistency 新增 CHANGELOG「当前版本」尾行第三处对账（此前仅人工保持一致）
+49. ✂️ SKILL.md 三档输出格式段外移（200→183 行）：L0 卡片简化模板与 L1/L2 摘要与 output-template.md 重复，SKILL.md 改为一行指针；output-template.md 本就是更完整的单一事实源，无内容损失
+50. 📖 README 回归章节重写：明确"20 项遵守率全 1.0 是理想输入自证的必然结果，非真实 LLM 遵守率信号"；补充空检索样本校验强度说明（仅含第零/九/十章，第 16 项跳过、第 4/17 项实质不触发，全量路径由 dr-l2 任务覆盖，实测验证）；run_regression.py docstring 同步
 
 ---
 
