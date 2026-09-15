@@ -43,6 +43,24 @@ def get_internal_jargon():
     return tuple(load_json_config("internal_jargon.json")["internal_jargon"])
 
 
+def get_internal_jargon_word_boundary():
+    """从 internal_jargon.json 读取需词边界匹配的短英文词列表。
+
+    这些词（如 project_memory）若用子串匹配，会误伤含相同子串的正常术语；
+    用 \b 词边界匹配后，memory-efficient 等复合词不再误报。
+    """
+    return tuple(load_json_config("internal_jargon.json").get("_word_boundary_jargon", []))
+
+
+def get_internal_jargon_contextual():
+    """从 internal_jargon.json 读取需上下文匹配的词字典。
+
+    键为黑话词，值为人类可读的理由说明；校验器只在词后接内部语境词
+    （标记/元信息/字段/区块/解析）时判定为黑话，避免出版等正常语境误伤。
+    """
+    return load_json_config("internal_jargon.json").get("_contextual_jargon", {})
+
+
 def get_conclusion_options():
     """从 conclusion_options.json 读取三选一结论选项。"""
     return tuple(load_json_config("conclusion_options.json")["conclusion_options"])

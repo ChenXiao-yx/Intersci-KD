@@ -225,3 +225,102 @@ class TestInstructionLeak:
     def test_check20_applies_to_all_levels(self):
         for lvl in (vo.LEVEL_L0, vo.LEVEL_L1, vo.LEVEL_L2, vo.LEVEL_L3):
             assert 20 in vo.APPLICABLE_CHECKS[lvl]
+
+
+class TestJargonMatchingP01:
+    """新方案 P0-1: 黑话三层匹配策略（词边界/上下文/子串）。"""
+
+    def test_memory_efficient_not_flagged(self):
+        """正常 AI 术语 memory-efficient 不误伤（原 memory 黑话已移除）。"""
+        text = "## 某章\n\n采用 memory-efficient 训练策略。\n"
+        ok, _ = vo.check_no_internal_jargon(text, vo.LEVEL_L2)
+        assert ok is True
+
+    def test_working_memory_not_flagged(self):
+        """working memory 等认知科学术语不误伤。"""
+        text = "## 某章\n\n工作记忆 working memory 容量与任务表现相关。\n"
+        ok, _ = vo.check_no_internal_jargon(text, vo.LEVEL_L2)
+        assert ok is True
+
+    def test_publication_front_matter_not_flagged(self):
+        """出版语境的 front-matter 不误伤（无内部语境词后接）。"""
+        text = "## 某章\n\n期刊的 front-matter 包含编辑信息。\n"
+        ok, _ = vo.check_no_internal_jargon(text, vo.LEVEL_L2)
+        assert ok is True
+
+    def test_internal_front_matter_flagged(self):
+        """内部语境的 front-matter 标记仍被检出。"""
+        text = "## 某章\n\n修改 front-matter 标记后重跑。\n"
+        ok, detail = vo.check_no_internal_jargon(text, vo.LEVEL_L2)
+        assert ok is False
+        assert "front-matter" in detail
+
+    def test_project_memory_word_boundary(self):
+        """project_memory 词边界匹配：完整词命中，子串不命中。"""
+        assert vo._jargon_hit("更新 project_memory 文件", "project_memory") is True
+        assert vo._jargon_hit("这是 project_memoryX 的说明", "project_memory") is False
+
+    def test_plain_substring_jargon_still_works(self):
+        """普通黑话（如 base_weight）仍子串匹配。"""
+        text = "## 某章\n\n其中 base_weight 为 2.0。\n"
+        ok, _ = vo.check_no_internal_jargon(text, vo.LEVEL_L2)
+        assert ok is False
+
+
+class TestInstructionLeakLayers:
+    """新方案 P0-2: 指令泄漏两层短语。"""
+
+    def test_legit_reference_outside_disclaimer_passes(self):
+        """正文中合法引用'不得修改措辞'不误伤（只要不在免责区）。"""
+        text = "## 某章\n\n用户问为什么免责声明不得修改措辞，这里解释。\n\n## 免责声明\n\n> 本简报基于公开文献生成，不构成研究决策依据。\n"
+        ok, _ = vo.check_no_instruction_leak(text, vo.LEVEL_L2)
+        assert ok is True
+
+    def test_leak_in_disclaimer_still_flagged(self):
+        """免责区内的泄漏仍被检出（验收样例）。"""
+        text = "## 免责声明\n> 本简报基于公开学术论文和通用知识生成，不得修改措辞。\n"
+        ok, detail = vo.check_no_instruction_leak(text, vo.LEVEL_L0)
+        assert ok is False
+        assert "免责声明区" in detail
+
+    def test_strict_phrase_flagged_anywhere(self):
+        """严格短语（如 SYSTEM INSTRUCTIONS）出现在正文任意位置即硬失败。"""
+        text = "## 某章\n\n参照 SYSTEM INSTRUCTIONS 执行。\n"
+        ok, detail = vo.check_no_instruction_leak(text, vo.LEVEL_L2)
+        assert ok is False
+        assert "正文" in detail
+
+
+class TestScoringSignature:
+    """新方案 P1-1: 校验项 21 计分签名校验。"""
+
+    def test_check21_applies_to_all_levels(self):
+        for lvl in (vo.LEVEL_L0, vo.LEVEL_L1, vo.LEVEL_L2, vo.LEVEL_L3):
+            assert 21 in vo.APPLICABLE_CHECKS[lvl]
+
+    def test_valid_signature_passes(self):
+        score = {"scored_by": "score_evidence.py", "scored_by_version": "4.6.0"}
+        ok, detail = vo.check_scoring_signature("正文", score, vo.LEVEL_L2)
+        assert ok is True
+        assert "score_evidence.py@4.6.0" in detail
+
+    def test_missing_signature_fails(self):
+        ok, detail = vo.check_scoring_signature("正文", {"total_score": 1.0}, vo.LEVEL_L2)
+        assert ok is False
+        assert "scored_by" in detail
+
+    def test_manual_signature_fails(self):
+        ok, _ = vo.check_scoring_signature("正文", {"scored_by": "manual"}, vo.LEVEL_L2)
+        assert ok is False
+
+    def test_l3_json_block_without_signature_fails(self):
+        """文本内嵌 L3 JSON 审计日志缺 scored_by → 硬失败。"""
+        text = '```json\n{"detailed_scores": [], "conclusion": "优先整合"}\n```'
+        ok, detail = vo.check_scoring_signature(text, None, vo.LEVEL_L2)
+        assert ok is False
+        assert "L3 JSON" in detail
+
+    def test_no_score_json_passes(self):
+        """无 score_json 且无审计日志 → 放行（L0/L1 场景）。"""
+        ok, _ = vo.check_scoring_signature("普通正文", None, vo.LEVEL_L0)
+        assert ok is True

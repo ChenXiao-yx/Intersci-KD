@@ -1,5 +1,5 @@
 {
-  "_comment": "端到端回归任务集（P2-1）。kind=output_validation：对已归档交付样本跑全量校验并统计各校验项通过率；kind=score_check：对证据 fixture 跑确定性计分并与期望比对（level/valid_evidence_count/max_core_base_weight）。current_year 固定 2026 保证年份衰减可复现。交付物随真实运行持续补充。",
+  "_comment": "端到端回归任务集（P2-1 + P1-2）。kind=output_validation：对已归档交付样本跑全量校验并统计各校验项通过率；kind=score_check：对证据 fixture 跑确定性计分并与期望比对（level/valid_evidence_count/max_core_base_weight）；kind=llm_freeform：读 freeform_samples/ 下 LLM 自由生成结果跑校验——这是真实遵守率信号层，样本不存在时 pending 不阻塞回归。current_year 固定 2026 保证年份衰减可复现。",
   "current_year": 2026,
   "min_pass_rate": 0.8,
   "tasks": [
@@ -99,6 +99,15 @@
         "max_core_base_weight": 5.0,
         "core_evidence_threshold": 1.5
       }
+    },
+    {
+      "id": "dr-freeform-l0",
+      "name": "DR 自由生成（L0，真实 LLM 信号）",
+      "kind": "llm_freeform",
+      "level": "L0",
+      "prompt": "基于深度学习的糖尿病视网膜病变分类研究",
+      "sample_path": "freeform_samples/dr-freeform-l0.md",
+      "expected_min_pass_rate": 0.7
     }
   ]
 }

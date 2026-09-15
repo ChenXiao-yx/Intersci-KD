@@ -1,4 +1,8 @@
-"""InterSci-KD 确定性证据计分器。纯标准库实现，无第三方依赖。用法见 --help。"""
+"""InterSci-KD 确定性证据计分器。纯标准库实现，无第三方依赖。用法见 --help。
+
+P1-1 计分签名：每次计分输出含 scored_by / scored_by_version / scored_at 三个字段，
+供 validate_output.py 第 21 项验证计分结果确实由本脚本产出（防 LLM 手写绕过）。
+"""
 import argparse
 import json
 import re
@@ -7,6 +11,8 @@ from pathlib import Path
 from datetime import datetime
 
 from config_loader import get_valid_domains
+
+__version__ = "4.6.1"
 
 # 标准 DOI 正则：10.XXXX/...（XXXX 至少 4 位数字）
 # 用于 has_doi 判定，避免把 "DEN180001"、"10.0000/mock" 等非标准编号当 DOI
@@ -188,6 +194,10 @@ def score_evidence(evidence_list: list[dict], domain: str, current_year: int) ->
         base_weight = domain_weights.get(
             ev_type, EVIDENCE_WEIGHTS.get(ev_type, DEFAULT_WEIGHT)
         )
+        # P0-3：标注权重来源，供审计时区分全局权重与域级覆盖
+        weight_source = (
+            f"domain_override:{domain_key}" if ev_type in domain_weights else "global"
+        )
         multiplier = CONFIDENCE_MULTIPLIERS.get(confidence, 0.5)
         wac = base_weight * multiplier
         decay_factor, note = calc_decay(year, current_year)
@@ -321,6 +331,7 @@ def score_evidence(evidence_list: list[dict], domain: str, current_year: int) ->
         item = {
             "id": idx, "type": ev_type, "confidence": confidence,
             "base_weight": base_weight, "multiplier": multiplier,
+            "weight_source": weight_source,  # P0-3：global 或 domain_override:<域>
             "decay_factor": round(decay_factor, 2), "weight": weight,
             "score": weight, "weighted_score": weight,  # 加权分=base_weight×multiplier×decay_factor，与 weight 同值
             "year": year, "description": title, "note": note,
@@ -363,6 +374,10 @@ def score_evidence(evidence_list: list[dict], domain: str, current_year: int) ->
         "total_supplemental": total_supplemental,  # supplemental 的合计（审计用）
         "level": level, "level_emoji": emoji,
         "domain": domain, "source_count": len(evidence_list),
+        # P1-1 计分签名：证明本结果由 score_evidence.py 产出（第 21 项校验依据）
+        "scored_by": "score_evidence.py",
+        "scored_by_version": __version__,
+        "scored_at": datetime.now().isoformat(timespec="seconds"),
         "valid_evidence_count": valid_count,
         "core_evidence_count": core_count,
         "supplemental_evidence_count": supplemental_count,

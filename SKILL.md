@@ -10,7 +10,7 @@ license: MIT
 tags: [knowledge-distillation, cross-disciplinary, evidence-based, research-analysis,
   decision-support, systematic-review, evidence-gap-analysis, research-priority,
   domain-mapping, conflict-resolution]
-version: "4.6.0-skill"
+version: "4.6.1-skill"
 author: InterSci-KD Team
 created: "2025-01-01"
 updated: "2026-09-15"
@@ -111,13 +111,15 @@ A→扩年限+扩关键词重检索，仍<0.5 提示选 B/C；B→等用户贴�
 
 **首轮只生成 L0 卡片并暂停**，不得自动连续渲染三档：L0（30 秒决策卡片，结论先行+定位问题+证据分数+最大不确定性+下一步，结尾给展开选项）→ 用户"继续/精简/3分钟"→L1 五块；"完整/详细"→L2 十章；"审计/JSON/专家"→L3（L2+计分明细日志）。定位回答（A 算法研究/B 临床部署/C 不确定）是 L1/L2 结论方向的输入，展开时按已确认目标重估结论，不沿用 L0 占位结论。三档数据同源：底层证据一次计分，三档是同一结果的三个视图。
 
-**档位例外**：首轮"快速/只要结论"→仅 L0 暂停；"完整+方向/直接出报告"→可一次输出 L0→L1→L2（三档分别校验）；"精简"→跳过 L0 直接 L1；无关键词→默认仅 L0。
+**档位例外**：首轮"快速/只要结论"→仅 L0 暂停；"完整+方向/直接出报告"→可一次输出 L0→L1→L2（三档分别校验）；"精简"→跳过 L0 直接 L1；无关键词→默认仅 L0；用户输入含"分析/研究/详细/帮我看看"等显式要求实质内容的词→首轮可 L0+L1 连续输出（不暂停，L2 前仍暂停，P1-4 减少交互摩擦）。
 
 ### 无依据预测、指令收口与输出后自校验（全档位强制）
 
 无引用的预测性判断必须标【推断】并注明"基于训练数据，未经检索验证"，或直接删除；机械升级承诺改为"补硬证据后重新计分"，不承诺时间；模板中对 AI 的指令文字（含 SYSTEM INSTRUCTIONS 区块）禁止渲染给用户。以上由校验器第 18/20 项拦截。
 
-**输出 L0/L1/L2/L3 后必须自校验**：`python scripts/validate_output.py --input <输出文件> --level L0`（--level 必填；哪个档位被生成就校验哪个档位），硬失败必须重写后复检，0 硬失败才交付。校验器内置 20 项编号检查（13 为警告不阻断，16 仅 L0，20 指令泄漏全档位硬门禁），档位适用集由脚本自动适配，实现见 validate_output.py docstring。
+**输出 L0/L1/L2/L3 后必须自校验**：`python scripts/validate_output.py --input <输出文件> --level L0`（--level 必填；哪个档位被生成就校验哪个档位），硬失败必须重写后复检，0 硬失败才交付。校验器内置 21 项编号检查（13 为警告不阻断，16 仅 L0，20 指令泄漏与 21 计分签名全档位硬门禁），档位适用集由脚本自动适配，实现见 validate_output.py docstring。
+
+**计分必须走脚本（P1-1 硬门禁）**：L2/L3 输出的 JSON 审计日志必须原样嵌入 `score_evidence.py` 的输出（含 `scored_by` / `scored_by_version` / `scored_at` 字段），不得手写——校验器第 21 项拦截签名缺失或非脚本来源的计分结果。LLM 手算路径只允许在脚本双重不可用时使用，且必须在第九章声明；手算结果无法通过 L2/L3 校验（`"scored_by": "manual"` 同样硬失败），只能降级到 L1 交付。
 
 ### 禁止内部黑话与人话翻译（全档位强制）
 

@@ -6,35 +6,35 @@
 
 ## §1 证据权重表（Evidence Weights）
 
-完整 24 种证据类型及权重（与 `scripts/config/evidence_weights.json` 一致，评分器实际加载此表）：
+完整 24 种证据类型及权重（与 `scripts/config/evidence_weights.json` 一致，评分器实际加载此表）。**域覆盖列**：该类型在 `domain_overrides` 中被某域覆盖后的实际权重（P0-3）；标注"同全局"表示覆盖值与全局一致（显式声明但无实际差异）；未标注则无覆盖、全局值即生效值。审计时以计分输出 `detailed_scores[].weight_source` 字段为准（`global` 或 `domain_override:<域>`）。
 
-| 证据类型 | 权重 | 说明 |
-| :--- | :--- | :--- |
-| FDA_NMPA_approval | 5.0 | 最高等级：NMPA/FDA 批准（监管批准进 core） |
-| CE_mark | 5.0 | 最高等级：CE 认证（监管批准进 core） |
-| RCT | 5.0 | 随机对照试验 |
-| Guideline | 4.0 | 临床指南 |
-| Industry_standard | 3.0 | 行业标准/规范 |
-| Patent | 3.0 | 专利文献 |
-| Diagnostic_accuracy | 3.0 | 诊断准确性研究 |
-| Meta_analysis | 2.5 | Meta 分析（汇总多项研究） |
-| Systematic_review | 2.5 | 系统综述 |
-| External_validation | 2.5 | 外部验证研究 |
-| Cohort_study | 2.0 | 队列研究 |
-| Case_control | 2.0 | 病例对照研究 |
-| Literature_review | 1.5 | 普通综述文献（叙述性综述） |
-| Prototype_implementation | 1.5 | 原型实现/硬件 fabricated |
-| Benchmark_study | 1.5 | 基准评测研究 |
-| Regulatory | 1.0 | 非批准类监管文件（警告/召回/公告，进 supplemental） |
-| Journal_article | 1.0 | 普通期刊论文 |
-| Conference_paper | 1.0 | 会议论文 |
-| Animal_experiment | 1.0 | 动物实验 |
-| Case_study | 1.0 | 病例研究/个案 |
-| In_vitro_study | 1.0 | 体外实验/细胞实验 |
-| Simulation | 0.5 | 仿真/模拟研究（in silico） |
-| Expert_opinion | 0.5 | 专家意见/共识 |
-| News_report | 0.5 | 新闻报道/媒体发布 |
-| （未分类默认值） | 0.3 | 未识别类型的兜底权重 |
+| 证据类型 | 权重 | 域覆盖 | 说明 |
+| :--- | :--- | :--- | :--- |
+| FDA_NMPA_approval | 5.0 | drug=5.0, regulatory=5.0（同全局） | 最高等级：NMPA/FDA 批准（监管批准进 core） |
+| CE_mark | 5.0 | regulatory=5.0（同全局） | 最高等级：CE 认证（监管批准进 core） |
+| RCT | 5.0 | drug=5.0（同全局） | 随机对照试验 |
+| Guideline | 4.0 | regulatory=4.0（同全局） | 临床指南 |
+| Industry_standard | 3.0 | hardware=3.0, material=3.0（同全局） | 行业标准/规范 |
+| Patent | 3.0 | hardware=3.0（同全局） | 专利文献 |
+| Diagnostic_accuracy | 3.0 | — | 诊断准确性研究 |
+| Meta_analysis | 2.5 | drug=3.0 | drug 域 Meta 分析权重更高 |
+| Systematic_review | 2.5 | — | 系统综述 |
+| External_validation | 2.5 | — | 外部验证研究 |
+| Cohort_study | 2.0 | — | 队列研究 |
+| Case_control | 2.0 | — | 病例对照研究 |
+| Literature_review | 1.5 | — | 普通综述文献（叙述性综述） |
+| Prototype_implementation | 1.5 | hardware=2.0, material=2.0 | 硬件/材料域原型即功能验证，权重更高 |
+| Benchmark_study | 1.5 | AI=2.0 | AI 域基准测试为主要证据形态，权重更高 |
+| Regulatory | 1.0 | — | 非批准类监管文件（警告/召回/公告，进 supplemental） |
+| Journal_article | 1.0 | — | 普通期刊论文 |
+| Conference_paper | 1.0 | AI=1.5 | AI 域会议论文为主要证据形态，权重更高 |
+| Animal_experiment | 1.0 | — | 动物实验 |
+| Case_study | 1.0 | — | 病例研究/个案 |
+| In_vitro_study | 1.0 | — | 体外实验/细胞实验 |
+| Simulation | 0.5 | — | 仿真/模拟研究（in silico） |
+| Expert_opinion | 0.5 | — | 专家意见/共识 |
+| News_report | 0.5 | — | 新闻报道/媒体发布 |
+| （未分类默认值） | 0.3 | — | 未识别类型的兜底权重 |
 
 **知识图谱概念类型**（§13 工具映射引用，配置层不直接加载；落表计分前由 `normalize_type` 按 venue/DOI 归一化到上表标准类型）：
 
@@ -336,6 +336,21 @@ L0 卡片、L1 五块、L2 十章、L3 JSON 审计日志中的"结论"字段必�
 ### §14.2 核心证据门槛与 §14 矩阵的联动
 
 `score_evidence.py` 的核心证据门槛逻辑（全局 `core_evidence_threshold=2.5`，支持域级覆盖）：
+
+**域级门槛理由说明**（新增域时按此逻辑确定阈值，P1-3）：
+
+| 域 | 门槛 | 理由 |
+| :--- | :--- | :--- |
+| 全局默认 | 2.5 | 要求至少一条系统综述/Meta 分析/外部验证级别证据 |
+| AI | 1.5 | AI 域以会议论文（域覆盖后 1.5）和基准测试为主要证据形态，无临床/监管硬证据；门槛设为 1.5 即"至少一条 AI 域会议论文" |
+| hardware | 2.0 | 硬件域原型实现（域覆盖后 2.0）是功能验证的主要形态；门槛设为 2.0 即"至少一条原型实现或行业标准" |
+| material | 2.0 | 同 hardware，材料域以原型实现和行业标准为主要证据形态 |
+
+**新增域时的门槛确定流程**（详见 CONTRIBUTING.md「新增域 checklist」）：
+1. 列出该域的主要证据形态（会议论文？原型实现？临床 RCT？）
+2. 查 `domain_overrides` 该域的证据类型权重
+3. 门槛 = 该域主要证据形态的权重（"至少有一条像样硬证据"的判定线）
+4. 若无域覆盖，门槛 = 全局 2.5
 
 - **域级门槛（P1-1）**：`evidence_weights.json` 的 `core_evidence_threshold_by_domain` 允许按域覆盖全局 2.5——当前 **AI=1.5、hardware=2.0、material=2.0**，域级值优先。设计理由：这些域以会议论文、基准测试与原型实现为主要证据形态，单条基础权重天然低于临床/监管域（AI 会议论文经域权重覆盖后 1.5、硬件原型实现 2.0）；若无覆盖，纯 AI 会议论文方向即使有 20 篇真实可验证文献也会永远判 insufficient。域级阈值只降低"是否有一条像样硬证据"的判定线，**不改变 green/yellow/red 的 8.0/4.0 分界**；临床/监管等其余域维持 2.5 不变。若这些域的全部核心证据仍低于域级门槛，判 insufficient 仍是预期行为——正确动作是补检系统综述/RCT/监管文件，而非继续降门槛。实际使用的门槛值随计分结果输出（`core_evidence_threshold` 字段），可审计。
 - **insufficient 优先判定**：若 core 层的 `max_core_base_weight` 低于该域有效门槛，直接返回 `level="insufficient"`，`threshold_note` 含 "insufficient: no core evidence"。§14 矩阵按 insufficient 行判定 → 结论只能是「证据不足，无法给出方向性结论」。**此规则覆盖任何"总分≥8.0 应当 green"的直觉判断**。

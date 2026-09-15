@@ -1,5 +1,5 @@
 {
-  "_comment": "内部黑话列表。validate_output.py check_no_internal_jargon 检测这些术语出现在交付物中即 fail。单一事实源：修改此文件即自动同步到 validate_output.py。同步规则：新增内部术语时必须先加到此文件。",
+  "_comment": "内部黑话列表。validate_output.py check_no_internal_jargon 检测这些术语出现在交付物中即 fail。单一事实源：修改此文件即自动同步到 validate_output.py。同步规则：新增内部术语时必须先加到此文件。三类匹配：普通词用子串匹配；_word_boundary_jargon 中的短英文词用词边界匹配（避免 memory-efficient 等正常术语误伤）；_contextual_jargon 中的词仅在后接内部语境词（标记/元信息/字段/区块/解析）时判定为黑话（出版物语境的 front-matter 放行）。",
   "internal_jargon": [
     "max_single",
     "base_weight",
@@ -43,7 +43,6 @@
     "档位感知",
     "SKILL.md",
     "output-template.md",
-    "memory",
     "project_memory",
     "front-matter",
     "规则1",
@@ -52,5 +51,9 @@
     "规则 1",
     "规则 2",
     "规则 3"
-  ]
+  ],
+  "_word_boundary_jargon": ["project_memory"],
+  "_contextual_jargon": {
+    "front-matter": "仅当后接 标记/元信息/字段/区块/解析 等内部语境词时判定为黑话；出版物语境的 front-matter 放行"
+  }
 }

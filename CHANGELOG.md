@@ -100,6 +100,18 @@
 49. ✂️ SKILL.md 三档输出格式段外移（200→183 行）：L0 卡片简化模板与 L1/L2 摘要与 output-template.md 重复，SKILL.md 改为一行指针；output-template.md 本就是更完整的单一事实源，无内容损失
 50. 📖 README 回归章节重写：明确"20 项遵守率全 1.0 是理想输入自证的必然结果，非真实 LLM 遵守率信号"；补充空检索样本校验强度说明（仅含第零/九/十章，第 16 项跳过、第 4/17 项实质不触发，全量路径由 dr-l2 任务覆盖，实测验证）；run_regression.py docstring 同步
 
+**v4.6.1-skill（2026-09-16）：第二轮优化方案落地（P0×3 + P1×4，P2-1/P2-2 按方案建议缓办）**
+
+51. 🛡️ P0-1 黑话检测三层匹配：internal_jargon.json 移除 "memory"（memory-efficient/working memory 误伤）、移除裸 front-matter 语境误伤；新增 _word_boundary_jargon（project_memory 词边界匹配）与 _contextual_jargon（front-matter 仅在后接 标记/元信息/字段/区块/解析 时判定）；config_loader 新增 get_internal_jargon_word_boundary/contextual；validate_output 新增 _jargon_hit 分发；6 个新测试
+52. 🛡️ P0-2 指令泄漏拆两层：STRICT_LEAK_PHRASES（此行是对 AI 的指令/不渲染给用户/SYSTEM INSTRUCTIONS）全文硬门禁；DISCLAIMER_ZONE_LEAK_PHRASES（不得修改措辞/每次蒸馏简报末尾必须原样附加/对 AI 的指令）仅在「## 免责声明」后检查——正文合法引用不再误伤，验收样例（免责区引用块泄漏）仍被覆盖；INSTRUCTION_LEAK_PHRASES 保留为兼容别名；3 个新测试
+53. 📊 P0-3 域覆盖权重可审计：detailed_scores[] 新增 weight_source 字段（global / domain_override:<域>）；evidence_weights.json 的 domain_overrides._comment 明确"域级差异只反映该域内证据形态真实强度，不改变全局默认"；evidence-rubric.md §1 表格新增"域覆盖"列（24 类型逐一标注）
+54. 🔏 P1-1 计分签名硬门禁：score_evidence.py 输出新增 scored_by/scored_by_version(__version__=4.6.0)/scored_at 三字段；validate_output 新增第 21 项 check_scoring_signature（score_json 或 L3 JSON 审计日志必须含 scored_by=score_evidence.py，缺失/伪造/manual 均硬失败；无 JSON 时放行）；APPLICABLE_CHECKS 四档位 +21；三份黄金样本 score.json 重新生成（含签名，计分不变 12.15/10.65/green）；SKILL.md 新增"计分必须走脚本"硬性要求；校验器 20→21 项
+55. 📈 P1-2 回归基线双轨：run_regression.py 新增 llm_freeform 任务类型（freeform_samples/ 下样本存在则 measured 测真实遵守率，不存在则 pending 不阻塞）；tasks.json 追加 dr-freeform-l0 任务；baseline.json 新增 freeform_baseline 段（初始空，--update-baseline 填充）；freeform_samples/README.md 说明供样纪律（LLM 原始输出、不得手工修复）；README 回归章节区分两层基线
+56. 📝 P1-3 域级门槛理由表：evidence-rubric.md §14.2 新增四行理由表（全局 2.5/AI 1.5/hardware 2.0/material 2.0 及确定逻辑）与新增域门槛确定流程；CONTRIBUTING.md 新增"新增域 checklist"5 步 + 步骤 2 修正为 domain_overrides 域级覆盖语义（原文"不支持按域分组"已过时）；evidence_weights.json _threshold_comment 引用 §14.2
+57. 🧭 P1-4 L0 交互摩擦缓解：output-template.md L0 结尾引导改为"回复「继续」看 3 分钟速览（推荐）"置前；EXECUTION_CHECKLIST 新增 §1b 快速通道表（含"分析/研究/详细"→L0+L1 连续不暂停）；SKILL.md 档位例外补充该规则；保留 L2 前暂停的决策点
+58. ⏸️ P2-1/P2-2 按方案建议暂缓：动态推导门槛（P2-1）保留显式配置+理由说明（P1-3 已补）；规则裁剪（P2-2）待 freeform_baseline 积累真实遵守率数据后按"低于 80%"信号选择性执行
+59. 🧪 测试 92→107 用例（+15：黑话三层 6 + 泄漏两层 3 + 计分签名 6）；回归任务 9→10（+dr-freeform-l0 pending）；SKILL.md 185 行
+
 ---
 
-**当前版本：4.6.0-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）
+**当前版本：4.6.1-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）

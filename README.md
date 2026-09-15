@@ -92,7 +92,7 @@ python scripts/score_evidence.py --input-json papers.json --domain biotech
 # 计分输出到文件（自动 pretty 格式化）
 python scripts/score_evidence.py --input-json papers.json --domain biotech --output score.json --pretty
 
-# 输出校验（共 20 项编号检查，第 13 项为警告级不阻断；--level 必填，按档位执行 10/9/19 项：首行第零章/三选一结论/第十章有效性状态/连续无标签检测/免责声明原文/L0-审计层结论一致/§14矩阵强校验/DOI有效性一致性/第十章DOI去重/DOI格式校验/计分明细子表/检索审计段/年份卷期一致性[警告]/计分明细加和一致性/检索审计完整性/证据分数格式[仅L0]/支撑结论去同质化/无依据预测标注/内部黑话检测/指令性文字泄漏检测）
+# 输出校验（共 21 项编号检查，第 13 项为警告级不阻断；--level 必填，按档位执行 11/10/20 项：首行第零章/三选一结论/第十章有效性状态/连续无标签检测/免责声明原文/L0-审计层结论一致/§14矩阵强校验/DOI有效性一致性/第十章DOI去重/DOI格式校验/计分明细子表/检索审计段/年份卷期一致性[警告]/计分明细加和一致性/检索审计完整性/证据分数格式[仅L0]/支撑结论去同质化/无依据预测标注/内部黑话检测/指令性文字泄漏检测/计分签名校验）
 python scripts/validate_output.py --input examples/full_output_golden.md --json examples/full_output_golden.score.json --level L2 --pretty
 
 # 直接调用指定 SCP 数据工具
@@ -134,7 +134,7 @@ intersci-kd-skill/
 │   ├── scp_tools.py          # SCP MCP 网关客户端（11 个数据工具/10 个端点，TOOL_COUNT 单一事实源）
 │   ├── search_papers.py      # 论文检索 CLI（自动委托 SCP 工具）
 │   ├── score_evidence.py     # 证据计分引擎（mock 强隔离 + 域级核心证据门槛）
-│   ├── validate_output.py    # 输出校验器（20 项编号检查，--level 必填按档位执行）
+│   ├── validate_output.py    # 输出校验器（21 项编号检查，--level 必填按档位执行）
 │   ├── check_consistency.py  # 文档-代码-配置一致性检查（版本号/工具数/配置对账）
 │   ├── requirements.txt      # Python 依赖
 │   └── config/
@@ -170,7 +170,7 @@ python tests/regression/run_regression.py --baseline tests/regression/baseline.j
 python tests/regression/run_regression.py --update-baseline
 ```
 
-**这套基线测的是什么（避免误读）**：output_validation 任务的输入是黄金样本（理想输出），校验对象也是黄金样本——"20 项遵守率全 1.0"是**必然结果而非真实 LLM 遵守率信号**。它的价值在于：(a) 交付样本或校验器被改动时立即暴露回归；(b) 作为接入真实 LLM 生成循环后的对照基线。真实遵守率需要让 LLM 对同一任务自由生成 L0/L1/L2 再跑校验，届时才可能出现"第 17 项仅 60% 通过"这类能驱动规则裁剪的真信号。
+**这套基线测的是什么（避免误读）**：output_validation 任务的输入是黄金样本（理想输出），校验对象也是黄金样本——"20 项遵守率全 1.0"是**必然结果而非真实 LLM 遵守率信号**。它的价值在于：(a) 交付样本或校验器被改动时立即暴露回归；(b) 作为接入真实 LLM 生成循环后的对照基线。真实遵守率看 `freeform_baseline`（llm_freeform 任务）：把 LLM 对同一任务自由生成的结果放入 `tests/regression/freeform_samples/`，回归会测出各项的**真实**通过率——那时才可能出现"第 17 项仅 60% 通过"这类能驱动规则裁剪的真信号。
 
 **空检索样本的校验强度说明**：`empty_retrieval_golden.md` 仅含第零/九/十章（空检索兜底场景不需要完整十章）。在 L2 档位下第 16 项证据分数格式（无计分子表可校验）直接跳过；第 4 项标签密度、第 17 项去同质化虽会执行，但因样本内容量小/无证据表数据行，检测逻辑实质不触发——该任务验证的是"空检索场景不误报"，而非 L2 全量校验路径的完整覆盖（后者由 dr-l2 任务承担）。若需更强覆盖，可扩充该样本或新增空检索 L1 任务。
 

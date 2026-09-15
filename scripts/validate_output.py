@@ -20,13 +20,15 @@
   17. 支撑结论去同质化（L2/L3）：第十章"支撑结论"列连续 3 行不得完全相同
   18. 无依据预测标注（全档位）：含 4 周/2026-2029/1-2 人/年均 50+ 等关键词必须有【推断】或引用
   19. 内部黑话检测（全档位）：禁止 max_single/base_weight/search_papers.py 等内部术语出现在用户输出
-  20. 指令性文字泄漏检测（全档位）：禁止"不得修改措辞"等对 AI 的指令文字出现在用户输出
+  20. 指令性文字泄漏检测（全档位）：两层短语——严格短语全文扫描，免责区专属短语仅在「## 免责声明」后检查
+  21. 计分签名校验（全档位，提供 score_json 或文本含 L3 JSON 审计日志时生效）：scored_by 必须
+      为 score_evidence.py，防 LLM 手写计分结果绕过确定性计分器（P1-1）
 
 档位识别（v4.4.1 起 --level 为必填参数，不再从交付文本解析）：
   - 调用必须显式传 --level L0/L1/L2/L3
   - L2/L3 完整审计：跑 19 项（第 16 项证据分数仅 L0；第 13 项年份一致性为警告不阻断）
-  - L0 卡片：跑 5/6/7/8/9/10/16/18/19/20 共 10 项（不校验第零章与十章专属项）
-  - L1 五块：跑 5/6/7/8/9/10/18/19/20 共 9 项
+  - L0 卡片：跑 5/6/7/8/9/10/16/18/19/20/21 共 11 项（不校验第零章与十章专属项）
+  - L1 五块：跑 5/6/7/8/9/10/18/19/20/21 共 10 项
 
 结果三态：每条结果 ok 为 true（通过）/false（硬失败）/"warning"（警告不阻断）/
 "skipped"（档位不适用）；JSON 顶层 hard_failures 只计 false，warnings 计警告数，
@@ -48,7 +50,8 @@ from typing import Optional
 
 from config_loader import (
     get_validity_states, get_internal_jargon, get_conclusion_options,
-    get_disclaimer_phrases,
+    get_disclaimer_phrases, get_internal_jargon_word_boundary,
+    get_internal_jargon_contextual,
 )
 
 
@@ -61,6 +64,9 @@ CHAPTER_ZERO_TITLE = "第零章：跨学科全景扫描"
 CONCLUSION_OPTIONS = get_conclusion_options()
 VALIDITY_STATES = get_validity_states()
 INTERNAL_JARGON = get_internal_jargon()
+# P0-1：三类黑话匹配策略（短英文词词边界 / 上下文词前后文约束 / 其余子串）
+_WORD_BOUNDARY_JARGON = set(get_internal_jargon_word_boundary())
+_CONTEXTUAL_JARGON = get_internal_jargon_contextual()
 LABELS = ("【确证】", "【推断】", "【无法判断】")
 LABEL_SYMBOL_MAP = {"✅": "【确证】", "🔶": "【推断】", "❓": "【无法判断】"}
 
@@ -93,11 +99,12 @@ LEVEL_L3 = "L3"
 # 11（计分明细）/12（检索审计）仅 L2/L3；16（证据分数）仅 L0
 # 13（年份/卷期一致性）为警告级：在 L2/L3 执行但不计硬失败
 # 20（指令性文字泄漏）全档位执行（P1-2）
+# 21（计分签名）全档位执行（P1-1）：有 score_json 或 L3 JSON 审计日志时生效，否则放行
 APPLICABLE_CHECKS = {
-    LEVEL_L0: {5, 6, 7, 8, 9, 10, 16, 18, 19, 20},
-    LEVEL_L1: {5, 6, 7, 8, 9, 10, 18, 19, 20},
-    LEVEL_L2: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20},
-    LEVEL_L3: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20},
+    LEVEL_L0: {5, 6, 7, 8, 9, 10, 16, 18, 19, 20, 21},
+    LEVEL_L1: {5, 6, 7, 8, 9, 10, 18, 19, 20, 21},
+    LEVEL_L2: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21},
+    LEVEL_L3: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21},
 }
 
 # 警告级校验项：执行但不阻断交付（不计入 hard_failures）
@@ -956,6 +963,24 @@ def _strip_quote_and_code_blocks(text):
     return "\n".join(result)
 
 
+def _jargon_hit(text: str, jargon: str) -> bool:
+    """P0-1：检测黑话是否命中。
+
+    三类匹配策略（由 internal_jargon.json 的 _word_boundary_jargon /
+    _contextual_jargon 分层声明）：
+    - 词边界（短英文词如 project_memory）：避免 memory-efficient 等复合词误伤；
+    - 上下文（如 front-matter）：仅在后接内部语境词时判定为黑话，
+      出版物语境的 front-matter 放行；
+    - 其余：子串匹配（原行为）。
+    """
+    if jargon in _WORD_BOUNDARY_JARGON:
+        return re.search(r"\b" + re.escape(jargon) + r"\b", text) is not None
+    if jargon in _CONTEXTUAL_JARGON:
+        pattern = re.escape(jargon) + r"\s*(标记|元信息|字段|区块|解析)"
+        return re.search(pattern, text) is not None
+    return jargon in text
+
+
 def check_no_internal_jargon(text, level):
     """19. 内部黑话检测（全档位）。
 
@@ -966,12 +991,13 @@ def check_no_internal_jargon(text, level):
     P1-13：引用块和代码块中的术语不视为黑话（放行），避免误伤正常中文。
     P0-2 修复：内部章节编号（§1、§14）的扫描同样剥离引用块/代码块，
     避免示例文档引用块中的 §14 描述被误判为交付物黑话。
+    P0-1：短英文词用词边界匹配（_jargon_hit），memory-efficient 等正常术语不误伤。
     """
     # P1-13：先移除引用块和代码块，只在正文检测黑话
     clean_text = _strip_quote_and_code_blocks(text)
     issues = []
     for jargon in INTERNAL_JARGON:
-        if jargon in clean_text:
+        if _jargon_hit(clean_text, jargon):
             # 定位出现位置
             idx = clean_text.find(jargon)
             # 取上下文
@@ -992,27 +1018,40 @@ def check_no_internal_jargon(text, level):
     return True, "无内部黑话"
 
 
-# 校验 20：指令性文字泄漏检测（P1-2）
+# 校验 20：指令性文字泄漏检测（P1-2，P0-2 拆两层）
 # 模板/规则中对 AI 的指令若被 LLM 渲染进用户输出，说明指令收口失败。
-# 黑名单短语出现在用户输出正文（引用块/代码块已剥离）即硬失败。
-INSTRUCTION_LEAK_PHRASES = [
-    "不得修改措辞",
+# 两层短语：
+#   STRICT_LEAK_PHRASES：全档位严格短语——剥离代码块后出现在任何正文位置（含引用块）即硬失败；
+#   DISCLAIMER_ZONE_LEAK_PHRASES：免责声明区专属短语——仅在「## 免责声明」到文末范围内检查。
+# 拆层原因："不得修改措辞" 等短语可能被正文合法引用（如用户问"为什么这段免责声明不能改"），
+# 全文扫描会误伤；而验收样例的泄漏恰好落在免责声明引用块内，免责区检查仍完整覆盖。
+STRICT_LEAK_PHRASES = [
     "此行是对 AI 的指令",
     "不渲染给用户",
     "SYSTEM INSTRUCTIONS",
+]
+
+DISCLAIMER_ZONE_LEAK_PHRASES = [
+    "不得修改措辞",
     "每次蒸馏简报末尾必须原样附加",
     "对 AI 的指令",
 ]
 
+# 向后兼容旧名（tests/外部引用了 INSTRUCTION_LEAK_PHRASES）
+INSTRUCTION_LEAK_PHRASES = STRICT_LEAK_PHRASES + DISCLAIMER_ZONE_LEAK_PHRASES
+
 
 def check_no_instruction_leak(text, level):
-    """20. 指令性文字泄漏检测（全档位）。
+    """20. 指令性文字泄漏检测（全档位，P0-2 拆两层）。
 
-    LLM 输出中若含内部指令文字（如"不得修改措辞"），说明模板指令被误渲染。
+    两层检查：
+    - 严格短语（STRICT_LEAK_PHRASES）：全文（剥离代码块后）检查，任何位置命中即硬失败；
+    - 免责区短语（DISCLAIMER_ZONE_LEAK_PHRASES）：只在「## 免责声明」到文末检查，
+      避免用户合法引用（如"这段为什么不修改措辞"）被误伤。
 
     与黑话检测（第 19 项）不同：指令短语在引用块中也算泄漏——
     方案验收样例即把泄漏文字放在免责声明引用块中（> 本简报…不得修改措辞），
-    这类短语在任何用户输出中都不应出现，故仅剥离代码块后全文检测。
+    免责区包含引用块内容，该样例仍被覆盖。
     """
     lines = text.splitlines()
     result = []
@@ -1026,10 +1065,61 @@ def check_no_instruction_leak(text, level):
             continue
         result.append(line)
     clean = "\n".join(result)
-    hits = [p for p in INSTRUCTION_LEAK_PHRASES if p in clean]
-    if hits:
-        return False, f"指令性文字泄漏：{hits}"
+
+    # 第一层：全文严格短语
+    strict_hits = [p for p in STRICT_LEAK_PHRASES if p in clean]
+    if strict_hits:
+        return False, f"指令性文字泄漏（正文）：{strict_hits}"
+
+    # 第二层：免责声明区专属短语
+    m = re.search(r"##\s*免责声明(.*)", clean, re.DOTALL)
+    if m:
+        disclaimer_zone = m.group(1)
+        zone_hits = [p for p in DISCLAIMER_ZONE_LEAK_PHRASES if p in disclaimer_zone]
+        if zone_hits:
+            return False, f"指令性文字泄漏（免责声明区）：{zone_hits}"
+
     return True, "无指令性文字泄漏"
+
+
+def check_scoring_signature(text, score_json, level):
+    """21. 计分签名校验（全档位，P1-1；有 score_json 或文本含 L3 JSON 审计日志时生效）。
+
+    防止 LLM 手写计分结果绕过 score_evidence.py：
+    - 若提供 score_json 参数：检查其 scored_by 字段；
+    - 若文本含 L3 JSON 审计日志（```json 块含 detailed_scores 或 conclusion）：
+      检查该 JSON 的 scored_by 字段；
+    - 两者都没有：视为 L0/L1 无审计日志场景，放行。
+
+    签名字段缺失或值非 "score_evidence.py" → 硬失败。
+    """
+    # 优先检查 score_json 参数
+    if score_json is not None:
+        if "scored_by" not in score_json:
+            return False, "score JSON 缺少 scored_by 字段，疑似手写而非 score_evidence.py 输出"
+        if score_json["scored_by"] != "score_evidence.py":
+            return False, f"scored_by 字段非 score_evidence.py：{score_json['scored_by']!r}"
+        ver = score_json.get("scored_by_version", "?")
+        return True, f"计分签名有效：score_evidence.py@{ver}"
+
+    # 检查文本中的 L3 JSON 审计日志
+    json_blocks = re.findall(r"```json\s*(.*?)\s*```", text, re.DOTALL)
+    for block in json_blocks:
+        try:
+            data = json.loads(block)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict):
+            continue
+        if "detailed_scores" not in data and "conclusion" not in data:
+            continue
+        if "scored_by" not in data:
+            return False, "L3 JSON 审计日志缺少 scored_by 字段，疑似手写而非 score_evidence.py 输出"
+        if data["scored_by"] != "score_evidence.py":
+            return False, f"L3 JSON 的 scored_by 字段非 score_evidence.py：{data['scored_by']!r}"
+        return True, f"计分签名有效：score_evidence.py@{data.get('scored_by_version', '?')}"
+
+    return True, "无计分 JSON，跳过签名校验"
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -1167,6 +1257,7 @@ def run_all(text: str, score_json: Optional[dict] = None, level: Optional[str] =
         (18, "18. 无依据预测标注", lambda t: check_unsupported_prediction_labels(t, level)),
         (19, "19. 内部黑话检测", lambda t: check_no_internal_jargon(t, level)),
         (20, "20. 指令性文字泄漏检测", lambda t: check_no_instruction_leak(t, level)),
+        (21, "21. 计分签名校验", lambda t: check_scoring_signature(t, score_json, level)),
     ]
     for num, name, fn in v2_checks:
         if num not in applicable:

@@ -33,7 +33,7 @@
 }
 ```
 
-> **注意**：当前实现不支持按 domain 分组自定义权重。所有 domain 共用同一套 `evidence_weights` 权重表，`domain_map` 只决定领域键到权重域的映射（用于 resolve_domain 解析）。若新领域需要独立的权重体系，需在 `domain_map` 中注册新键，并在 `score_evidence.py` 的 `resolve_domain` 中补充对应逻辑。
+> **域级覆盖（P0-3 语义澄清）**：若某证据类型在**该域内**的证据强度与全局不同（如硬件域的原型实现比全局更硬），在 `domain_overrides` 中按域键覆盖同名类型。被覆盖的类型在计分输出的 `detailed_scores[].weight_source` 中标注 `domain_override:<域>`，未覆盖回退全局值并标 `global`。域级差异只反映该域内该证据形态的真实强度，不改变全局默认。
 
 ### 验证
 
@@ -45,6 +45,19 @@ python scripts/score_evidence.py --input-json examples/intersci_input.json --dom
 ```
 
 预期：输出含 `"domain": "agriculture"`、`"level"`、`"valid_evidence_count"` 等字段。若 domain 未在 `domain_map` 中，会报 `ValueError: Unknown domain: 'agriculture'`。
+
+### 新增域 checklist（P1-3）
+
+1. `evidence_weights.json` 的 `domain_map` 添加域键映射
+2. 若有独特证据形态，`domain_overrides` 添加域级权重覆盖
+3. **确定 core_evidence_threshold**：
+   - 列出该域主要证据形态（会议论文/原型实现/临床 RCT 等）
+   - 查 `domain_overrides` 该域证据类型的权重
+   - 门槛 = 主要证据形态的权重（"至少有一条像样硬证据"的判定线）
+   - 写入 `core_evidence_threshold_by_domain`（理由同步到 evidence-rubric.md §14.2 理由表）
+   - 若无域覆盖，门槛 = 全局 2.5
+4. 更新 `references/evidence-rubric.md` §4 领域关键词表和 §14.2 门槛理由表
+5. 运行 `python scripts/check_consistency.py` 验证配置一致性
 
 ---
 

@@ -33,14 +33,14 @@
     "hardware": 2.0,
     "material": 2.0
   },
-  "_threshold_comment": "core 层无单条 base_weight≥有效门槛 → level 直接判 insufficient（不再 cap 到 yellow）。有效门槛 = core_evidence_threshold_by_domain[domain] 优先，回退 core_evidence_threshold（全局 2.5）。域级阈值说明：AI/硬件/材料域以会议论文与原型实现为主要证据形态，单条基础权重天然低于临床/监管域，允许较低门槛；阈值只降低硬证据判定线，不改变 green/yellow/red 的 8.0/4.0 分界。score_evidence.py 读取本文件作为单一事实源。",
+  "_threshold_comment": "core 层无单条 base_weight≥有效门槛 → level 直接判 insufficient（不再 cap 到 yellow）。有效门槛 = core_evidence_threshold_by_domain[domain] 优先，回退 core_evidence_threshold（全局 2.5）。域级阈值的确定理由与新增域门槛确定流程见 references/evidence-rubric.md §14.2；阈值只降低硬证据判定线，不改变 green/yellow/red 的 8.0/4.0 分界。score_evidence.py 读取本文件作为单一事实源。",
   "confidence_multipliers": {
     "high": 1.0,
     "medium": 0.5,
     "low": 0.25
   },
   "domain_overrides": {
-    "_comment": "P1-4：领域特定权重覆盖。按 domain 键覆盖 evidence_weights 的同名键。score_evidence.py 读取并合并到最终权重表。",
+    "_comment": "域级权重覆盖（P0-3 语义澄清）。按 domain 键覆盖 evidence_weights 的同名键；未覆盖的类型回退全局值。域级差异只反映该域内该证据形态的真实强度，不改变全局默认。审计时每条证据的 detailed_scores[].weight_source 字段标注来源（global 或 domain_override:<域>），避免查表混淆。score_evidence.py 读取并合并到最终权重表。",
     "hardware": {
       "Prototype_implementation": 2.0,
       "Industry_standard": 3.0,
