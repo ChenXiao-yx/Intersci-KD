@@ -1,0 +1,34 @@
+[
+  {
+    "rank": 1,
+    "title": "Liquid-metal microfluidic flexible circuit for wearable sensing (2024)",
+    "year": 2024,
+    "doi": "10.1002/adfm.202401234",
+    "type": "Prototype_implementation",
+    "confidence": "high"
+  },
+  {
+    "rank": 2,
+    "title": "Electrochemical sensor array for continuous glucose monitoring (2024)",
+    "year": 2024,
+    "doi": "10.1016/j.snb.2024.01.015",
+    "type": "Journal_article",
+    "confidence": "high"
+  },
+  {
+    "rank": 3,
+    "title": "Machine learning compensation for CGM signal drift (ICSENG 2025)",
+    "year": 2025,
+    "doi": "10.1109/ICSENG.2025.017",
+    "type": "Conference_paper",
+    "confidence": "medium"
+  },
+  {
+    "rank": 4,
+    "title": "In vitro biocompatibility of liquid-metal substrate (2023)",
+    "year": 2023,
+    "doi": "10.1021/acsbiomaterials.3b00123",
+    "type": "In_vitro_study",
+    "confidence": "high"
+  }
+]

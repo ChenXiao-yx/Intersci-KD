@@ -7,7 +7,7 @@
 | 文件 | 说明 |
 | :--- | :--- |
 | **SKILL.md** | 核心规则：蒸馏流程、证据权重、闸口阈值、输出模板 |
-| **references/** | 评分规则（evidence-rubric.md）、输出模板（output-template.md）、哲学背景（philosophy.md） |
+| **references/** | 评分规则（evidence-rubric.md）、输出模板（output-template.md）、人话翻译映射（plain-language-map.md）、哲学背景（philosophy.md） |
 | **scripts/** | 辅助脚本：论文检索、证据计分、SCP MCP 数据工具 |
 | **examples/** | 输入示例与黄金输出样本 |
 
@@ -22,13 +22,57 @@ pip install -r scripts/requirements.txt
 
 ## 环境配置
 
+### 方式一：首次运行自动引导（推荐）
+
+直接运行任意脚本，首次检测到 Key 缺失时会自动提示输入：
+
 ```bash
-# 复制环境变量模板并填入 API Key
-cp .env.example .env
+python scripts/search_papers.py --query "test" --top_k 3
 ```
 
-必填配置：
-- `SCP_HUB_API_KEY` — SCP 平台通用 API Key（所有 10 个 MCP 数据工具共用）
+运行后会看到：
+```
+检测到 SCP_HUB_API_KEY 未配置
+用途：SCP 平台通用 API Key（所有 11 个数据工具共用，10 个 MCP 端点）
+申请地址：https://scp.intern-ai.org.cn
+请粘贴你的 SCP_HUB_API_KEY（直接回车跳过，稍后手动配置 .env）：
+> 
+```
+
+粘贴 Key 后回车，自动保存到 `.env`，后续运行无需再次配置。
+
+### 方式二：手动配置
+
+```bash
+# 复制环境变量模板
+cp .env.example .env
+# 编辑 .env，填入你的 API Key
+```
+
+### 方式三：诊断当前配置状态
+
+```bash
+python scripts/key_setup.py --status
+```
+
+输出示例：
+```
+.env 文件：/path/to/intersci-kd-skill/.env
+.env.example 模板：/path/to/intersci-kd-skill/.env.example
+
+必填 Key：
+  ✅ SCP_HUB_API_KEY: sk-xxxx...xxxx
+```
+
+### 必填与可选配置
+
+| 变量名 | 必填 | 用途 | 申请地址 |
+| :--- | :--- | :--- | :--- |
+| \SCP_HUB_API_KEY\ | ✅ | SCP 平台通用 API Key（11 个数据工具共用，10 个 MCP 端点） | https://scp.intern-ai.org.cn |
+| `INTERNLM_API_KEY` | ⚪ | 书生大模型 API（仅 LLM_BACKEND=internlm 时需要） | https://intern-ai.org.cn |
+| `COMPETITION_API_KEY` | ⚪ | 竞赛 API（仅赛事参与者需要） | 由赛事方提供 |
+
+> **安全说明**：`.env` 文件包含真实凭证，已被 `.gitignore` 排除，不会进入 git 仓库。`.env.example` 是无 Key 的模板文件，会随仓库分发。请勿将真实 Key 提交到 git 或贴到公开渠道。
 
 ## 脚本用法
 
@@ -36,8 +80,20 @@ cp .env.example .env
 # 论文检索（自动选择最相关 SCP 工具）
 python scripts/search_papers.py --query "CRISPR gene editing" --top_k 10 --domain AI --pretty
 
+# 检索结果输出到文件
+python scripts/search_papers.py --query "CRISPR" --top_k 10 --domain AI --output papers.json
+
+# 强制真实 API（失败即退出，不降级 mock）
+python scripts/search_papers.py --query "CRISPR" --force-real
+
 # 证据计分与评级
 python scripts/score_evidence.py --input-json papers.json --domain biotech
+
+# 计分输出到文件（自动 pretty 格式化）
+python scripts/score_evidence.py --input-json papers.json --domain biotech --output score.json --pretty
+
+# 输出校验（共 20 项编号检查，第 13 项为警告级不阻断；--level 必填，按档位执行 10/9/19 项：首行第零章/三选一结论/第十章有效性状态/连续无标签检测/免责声明原文/L0-审计层结论一致/§14矩阵强校验/DOI有效性一致性/第十章DOI去重/DOI格式校验/计分明细子表/检索审计段/年份卷期一致性[警告]/计分明细加和一致性/检索审计完整性/证据分数格式[仅L0]/支撑结论去同质化/无依据预测标注/内部黑话检测/指令性文字泄漏检测）
+python scripts/validate_output.py --input examples/full_output_golden.md --json examples/full_output_golden.score.json --level L2 --pretty
 
 # 直接调用指定 SCP 数据工具
 python scripts/scp_tools.py --tool origene-chembl --query "aspirin" --top_k 5 --pretty
@@ -61,32 +117,60 @@ python scripts/scp_tools.py --tool origene-chembl --query "aspirin" --top_k 5 --
 | Origene-TCGA | 癌症基因组 | `/mcp/11/Origene-TCGA` |
 | SciGraph-Material | 材料科学 | `/mcp/40/SciGraph-Material` |
 
+> **端点说明**：Sciverse 端点（`/mcp/43/Sciverse`）提供 2 个工具（`search_papers` + `semantic_search`），因此 10 个端点对应 11 个工具。工具数量单一事实源：`scripts/scp_tools.py` 的 `TOOL_COUNT` / `ENDPOINT_COUNT`，由 `scripts/check_consistency.py` 对账，文档禁止硬编码其它数字。
+
 ## 项目结构
 
 ```
 intersci-kd-skill/
-├── SKILL.md                  # Skill 核心规则与蒸馏流程
+├── SKILL.md                  # Skill 核心规则与蒸馏流程（含 L0/L1/L2/L3 分档）
+├── CHANGELOG.md              # 完整修订日志（版本历史）
 ├── README.md                 # 使用说明
 ├── EXECUTION_CHECKLIST.md    # AI 执行导航清单
 ├── CONTRIBUTING.md           # 贡献指南
 ├── .env.example              # 环境变量模板
 ├── .gitignore
 ├── scripts/
-│   ├── scp_tools.py          # SCP MCP 网关客户端（10 个数据工具）
+│   ├── scp_tools.py          # SCP MCP 网关客户端（11 个数据工具/10 个端点，TOOL_COUNT 单一事实源）
 │   ├── search_papers.py      # 论文检索 CLI（自动委托 SCP 工具）
-│   ├── score_evidence.py     # 证据计分引擎
+│   ├── score_evidence.py     # 证据计分引擎（mock 强隔离 + 域级核心证据门槛）
+│   ├── validate_output.py    # 输出校验器（20 项编号检查，--level 必填按档位执行）
+│   ├── check_consistency.py  # 文档-代码-配置一致性检查（版本号/工具数/配置对账）
 │   ├── requirements.txt      # Python 依赖
 │   └── config/
-│       └── evidence_weights.json
+│       └── evidence_weights.json  # 证据权重配置（domain_map + 域级核心证据门槛）
 ├── references/
-│   ├── evidence-rubric.md    # 证据评分规则
-│   ├── output-template.md    # 十章输出模板
+│   ├── evidence-rubric.md    # 证据评分规则（含 §14.1 矩阵强校验、§14.2 域级门槛）
+│   ├── output-template.md    # 输出模板（L0 卡片 + L1 五块 + L2 十章，头部 SYSTEM INSTRUCTIONS 区块）
+│   ├── plain-language-map.md # 人话翻译固定映射表
 │   └── philosophy.md         # 跨学科哲学背景
+├── tests/
+│   ├── fixtures/             # 计分器/校验器测试样本（含 papers_ai_conference）
+│   └── regression/           # 端到端回归 + 遵守率度量（tasks.json / run_regression.py / baseline.json）
 └── examples/
     ├── example_input.json
     ├── intersci_input.json
-    └── full_output_golden.md
+    ├── dr_papers.json             # DR 文献锚点证据集（黄金样本计分数据源）
+    ├── full_output_golden.md      # L2 完整档位黄金样本
+    ├── full_output_golden.score.json
+    ├── card_output_golden.md      # L0 卡片档位黄金样本（DR 主题，与 L2 同源）
+    ├── card_output_golden.score.json
+    ├── brief_output_golden.md     # L1 精简档位黄金样本（DR 主题，与 L2 同源）
+    ├── brief_output_golden.score.json
+    └── empty_retrieval_golden.md  # 空检索兜底场景黄金样本
 ```
+
+## 回归与遵守率度量
+
+```bash
+# 全量回归（9 任务 + 20 项校验遵守率），对照基线检查回退
+python tests/regression/run_regression.py --baseline tests/regression/baseline.json
+
+# 交付物/证据变更后重写基线
+python tests/regression/run_regression.py --update-baseline
+```
+
+低于 min_pass_rate（默认 80%）的校验项会列入"优先考虑删除该规则或改为脚本兜底"清单——按方案 P2 原则，先做减法，不继续加提示词。
 
 ## 免责声明
 

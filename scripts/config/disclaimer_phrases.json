@@ -1,0 +1,14 @@
+{
+  "_comment": "免责声明关键短语。validate_output.py check_disclaimer 与 output-template.md/SKILL.md 同步引用。完整版 4 条，L0 精简版 1 条。修改时请同步三处。",
+  "full_prefix": "本简报基于公开学术论文和通用知识生成",
+  "full_key_phrases": [
+    "不构成研究决策或立项依据",
+    "不构成投资建议",
+    "不构成临床诊断或治疗建议",
+    "不得直接引用作为商业或研究合同依据"
+  ],
+  "l0_prefix": "本简报基于公开文献生成",
+  "l0_key_phrases": [
+    "不构成研究决策依据"
+  ]
+}

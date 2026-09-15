@@ -1,0 +1,11 @@
+{
+  "_comment": "有效性状态 6 枚举。validate_output.py 与 output-template.md 同步引用。修改时请同步三处。",
+  "validity_states": [
+    "有效",
+    "低影响力",
+    "已被修正或质疑",
+    "无法验证",
+    "待核验",
+    "监管批准"
+  ]
+}

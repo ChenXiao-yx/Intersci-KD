@@ -1,0 +1,9 @@
+{
+  "_comment": "三选一结论选项。validate_output.py extract_conclusion/check_three_choice_conclusion 与 output-template.md 同步引用。修改时请同步三处。",
+  "conclusion_options": [
+    "建议优先整合",
+    "建议持续追踪",
+    "建议暂时搁置",
+    "证据不足，无法给出方向性结论"
+  ]
+}

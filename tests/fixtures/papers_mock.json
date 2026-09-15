@@ -1,0 +1,24 @@
+[
+  {
+    "rank": 1,
+    "title": "[sciverse] Mock evidence #1 for query 'test'",
+    "abstract": "Mock fallback record",
+    "year": null,
+    "doi": "10.0000/mock.sciverse.1",
+    "source_type": "Patent",
+    "type": "Patent",
+    "confidence": "low",
+    "is_mock": true
+  },
+  {
+    "rank": 2,
+    "title": "[sciverse] Mock evidence #2 for query 'test'",
+    "abstract": "Mock fallback record",
+    "year": null,
+    "doi": "10.0000/mock.sciverse.2",
+    "source_type": "Patent",
+    "type": "Patent",
+    "confidence": "low",
+    "is_mock": true
+  }
+]

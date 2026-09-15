@@ -1,0 +1,34 @@
+[
+  {
+    "rank": 1,
+    "title": "Meta-analysis of mental fatigue assessment protocols in display work (2023)",
+    "year": 2023,
+    "doi": "10.1038/s41598-023-30001-x",
+    "type": "Meta_analysis",
+    "confidence": "high"
+  },
+  {
+    "rank": 2,
+    "title": "Cohort study of finger-task fatigue accumulation in assembly lines (2024)",
+    "year": 2024,
+    "doi": "10.1186/s12984-024-01234-5",
+    "type": "Cohort_study",
+    "confidence": "high"
+  },
+  {
+    "rank": 3,
+    "title": "Wearable pupillometry correlates with subjective fatigue scales (2024)",
+    "year": 2024,
+    "doi": "10.1080/00140139.2024.005",
+    "type": "Journal_article",
+    "confidence": "medium"
+  },
+  {
+    "rank": 4,
+    "title": "Single-case observation of micro-break effects on fatigue (2023)",
+    "year": 2023,
+    "doi": "10.1080/00140139.2023.010",
+    "type": "Case_study",
+    "confidence": "low"
+  }
+]

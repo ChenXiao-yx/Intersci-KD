@@ -1,0 +1,42 @@
+[
+  {
+    "rank": 1,
+    "title": "Attention-based DR grading on public benchmarks (CVPR 2025)",
+    "year": 2025,
+    "doi": "10.1109/CVPR.2025.001",
+    "type": "Conference_paper",
+    "confidence": "high"
+  },
+  {
+    "rank": 2,
+    "title": "Self-supervised pretraining for medical image classification (NeurIPS 2025)",
+    "year": 2025,
+    "doi": "10.5555/NEURIPS.2025.002",
+    "type": "Conference_paper",
+    "confidence": "high"
+  },
+  {
+    "rank": 3,
+    "title": "Vision transformer benchmark for retinal images (ICLR 2024)",
+    "year": 2024,
+    "doi": "10.5555/ICLR.2024.003",
+    "type": "Conference_paper",
+    "confidence": "high"
+  },
+  {
+    "rank": 4,
+    "title": "Federated learning for clinical AI at scale (MICCAI 2024)",
+    "year": 2024,
+    "doi": "10.1007/MICCAI.2024.004",
+    "type": "Conference_paper",
+    "confidence": "high"
+  },
+  {
+    "rank": 5,
+    "title": "Contrastive representation learning for OCT scans (AAAI 2024)",
+    "year": 2024,
+    "doi": "10.5555/AAAI.2024.005",
+    "type": "Conference_paper",
+    "confidence": "high"
+  }
+]

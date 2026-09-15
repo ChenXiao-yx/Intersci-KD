@@ -1,30 +1,69 @@
 {
+  "_comment": "证据类型按研究设计分级（非出版venue），权重越高证据强度越大。详见 references/evidence-rubric.md §1。",
   "evidence_weights": {
-    "FDA_NMPA": 5.0,
+    "FDA_NMPA_approval": 5.0,
     "CE_mark": 5.0,
+    "Regulatory": 1.0,
     "RCT": 5.0,
     "Meta_analysis": 2.5,
+    "Systematic_review": 2.5,
     "Industry_standard": 3.0,
     "Patent": 3.0,
-    "NCBI_database": 2.5,
-    "Systematic_review": 2.0,
-    "ChEMBL_compound": 2.0,
-    "PubMed_literature": 2.0,
-    "Prototype_implementation": 1.5,
+    "Guideline": 4.0,
+    "Diagnostic_accuracy": 3.0,
+    "External_validation": 2.5,
+    "Cohort_study": 2.0,
+    "Case_control": 2.0,
     "Literature_review": 1.5,
-    "Algorithm_benchmark": 1.0,
+    "Journal_article": 1.0,
+    "Prototype_implementation": 1.5,
+    "Benchmark_study": 1.5,
     "Animal_experiment": 1.0,
     "Case_study": 1.0,
     "In_vitro_study": 1.0,
+    "Conference_paper": 1.0,
     "Simulation": 0.5,
     "Expert_opinion": 0.5,
     "News_report": 0.5
   },
   "default_weight": 0.3,
+  "core_evidence_threshold": 2.5,
+  "core_evidence_threshold_by_domain": {
+    "AI": 1.5,
+    "hardware": 2.0,
+    "material": 2.0
+  },
+  "_threshold_comment": "core 层无单条 base_weight≥有效门槛 → level 直接判 insufficient（不再 cap 到 yellow）。有效门槛 = core_evidence_threshold_by_domain[domain] 优先，回退 core_evidence_threshold（全局 2.5）。域级阈值说明：AI/硬件/材料域以会议论文与原型实现为主要证据形态，单条基础权重天然低于临床/监管域，允许较低门槛；阈值只降低硬证据判定线，不改变 green/yellow/red 的 8.0/4.0 分界。score_evidence.py 读取本文件作为单一事实源。",
   "confidence_multipliers": {
     "high": 1.0,
     "medium": 0.5,
     "low": 0.25
+  },
+  "domain_overrides": {
+    "_comment": "P1-4：领域特定权重覆盖。按 domain 键覆盖 evidence_weights 的同名键。score_evidence.py 读取并合并到最终权重表。",
+    "hardware": {
+      "Prototype_implementation": 2.0,
+      "Industry_standard": 3.0,
+      "Patent": 3.0
+    },
+    "AI": {
+      "Benchmark_study": 2.0,
+      "Conference_paper": 1.5
+    },
+    "drug": {
+      "FDA_NMPA_approval": 5.0,
+      "RCT": 5.0,
+      "Meta_analysis": 3.0
+    },
+    "regulatory": {
+      "FDA_NMPA_approval": 5.0,
+      "CE_mark": 5.0,
+      "Guideline": 4.0
+    },
+    "material": {
+      "Industry_standard": 3.0,
+      "Prototype_implementation": 2.0
+    }
   },
   "domain_map": {
     "education": "social",
@@ -32,6 +71,15 @@
     "default": "biotech",
     "biotech": "biotech",
     "social": "social",
-    "business": "business"
+    "business": "business",
+    "hardware": "hardware",
+    "AI": "AI",
+    "drug": "drug",
+    "regulatory": "regulatory",
+    "oncology": "oncology",
+    "chemistry": "chemistry",
+    "material": "material",
+    "patent": "patent",
+    "knowledge": "knowledge"
   }
 }

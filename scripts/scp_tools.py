@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """scp_tools.py — SCP 专业数据工具 MCP 网关客户端 CLI（v2 MCP 协议版）。
 
-调用 11 个 SCP 数据工具之一，通过 MCP Streamable HTTP 协议返回结构化证据 JSON。
+调用 11 个 SCP 数据工具（10 个 MCP 端点，数量单一事实源见本文件 TOOL_COUNT/ENDPOINT_COUNT）之一，通过 MCP Streamable HTTP 协议返回结构化证据 JSON。
 - 真实模式：读取 SCP_HUB_API_KEY + 对应工具 MCP 端点，发起 JSON-RPC 2.0 tools/call。
 - 降级模式：Key 缺失或网关不可达 → 返回 per-tool mock 数据，status=mock_fallback。
 
@@ -20,6 +20,7 @@ import os
 import re
 import sys
 import time
+from typing import Optional
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -27,6 +28,31 @@ import time
 # ──────────────────────────────────────────────────────────────────────
 
 BASE_URL = "https://scp.intern-ai.org.cn/api/v1"
+
+
+def _extract_year(item: dict, *field_names) -> Optional[int]:
+    """从字典中尝试多个字段名提取年份，返回 int 或 None。
+
+    API 不返回年份时返回 None，让 score_evidence.calc_decay 走"未提供年份→不衰减"分支，
+    而不是硬编码 2024 导致所有论文恒为"近年"计分。
+    """
+    for field in field_names:
+        val = item.get(field) if isinstance(item, dict) else None
+        if val is None:
+            continue
+        try:
+            year = int(float(str(val).strip()))
+            if 1900 <= year <= 2099:
+                return year
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
+def _extract_year_from_text(text: str, default: Optional[int] = None) -> Optional[int]:
+    """从文本中提取 4 位年份（1900-2099）。用于 PubMed 纯文本响应等场景。"""
+    m = re.search(r'\b(19\d{2}|20\d{2})\b', text or "")
+    return int(m.group(1)) if m else default
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -133,7 +159,7 @@ def _parse_sciverse_response(text, tool_name="search_papers"):
         papers.append({
             "title": item.get("title", ""),
             "abstract": item.get("abstract", ""),
-            "year": item.get("publication_published_year", item.get("year", 2024)),
+            "year": _extract_year(item, "publication_published_year", "year", "pub_year", "published_year"),
             "doi": item.get("doi", ""),
             "source_type": item.get("source_type", item.get("publication_venue_name_unified", "Academic_paper")),
             "confidence": "high" if item.get("score", 0) > 0.8 else "medium",
@@ -167,7 +193,7 @@ def _parse_semantic_search_response(text, tool_name="semantic_search"):
         papers.append({
             "title": chunk[:120] if chunk else "",
             "abstract": chunk,
-            "year": item.get("year", 2024),
+            "year": _extract_year(item, "year", "publication_year"),
             "doi": chunk_id,
             "source_type": "semantic_search",
             "confidence": "high" if item.get("score", 0) > 0.8 else "medium",
@@ -275,7 +301,7 @@ def _parse_pubmed_text_response(text, tool_name="pubmed_search"):
         papers.append({
             "title": title or f"PubMed entry (PMID: {pmid})",
             "abstract": abstract,
-            "year": 2024,
+            "year": _extract_year_from_text(first_line),
             "doi": doi,
             "source_type": "PubMed_literature",
             "confidence": "medium",
@@ -315,7 +341,7 @@ def _parse_ncbi_response(text, tool_name="get_gene_metadata_by_gene_name"):
             papers.append({
                 "title": f"{symbol} — {description}" if symbol and description else (symbol or description[:120]),
                 "abstract": description,
-                "year": gene.get("year", 2024),
+                "year": _extract_year(gene, "year", "publication_year"),
                 "doi": gene.get("doi", gene.get("gene_id", "")),
                 "source_type": "NCBI_gene",
                 "confidence": "high",
@@ -352,7 +378,7 @@ def _parse_chembl_response(text, tool_name="search_activity"):
             papers.append({
                 "title": title,
                 "abstract": item.get("description", item.get("assay_description", "")),
-                "year": item.get("year", 2024),
+                "year": _extract_year(item, "year", "publication_year"),
                 "doi": item.get("molecule_chembl_id", item.get("chembl_id", "")),
                 "source_type": "ChEMBL_activity",
                 "confidence": "high",
@@ -412,7 +438,7 @@ def _parse_pubchem_response(text, tool_name="search_pubchem_by_name"):
             papers.append({
                 "title": title,
                 "abstract": f"PubChem compound CID={cid}, Formula={formula}, Weight={weight}",
-                "year": 2024,
+                "year": _extract_year(comp, "year", "publication_year"),
                 "doi": cid,
                 "source_type": "PubChem_compound",
                 "confidence": "high",
@@ -453,7 +479,7 @@ def _parse_fdadrug_response(text, tool_name="get_active_ingredient_info_by_drug_
             papers.append({
                 "title": str(display_name),
                 "abstract": f"Brand: {brand_name}, Generic: {generic_name}, Active Ingredient: {active_ingredient}",
-                "year": item.get("year", 2024),
+                "year": _extract_year(item, "year", "publication_year"),
                 "doi": item.get("application_number", ""),
                 "source_type": "FDA_Drug",
                 "confidence": "high",
@@ -493,7 +519,7 @@ def _parse_opentargets_response(text, tool_name="multi_entity_search_by_query_st
                     papers.append({
                         "title": str(name or hit_id or "OpenTargets entry"),
                         "abstract": str(description or ""),
-                        "year": 2024,
+                        "year": _extract_year(hit, "year", "publication_year"),
                         "doi": str(hit_id or ""),
                         "source_type": f"OpenTargets_{entity}",
                         "confidence": "high" if score and score > 0.8 else "medium",
@@ -579,7 +605,7 @@ def _parse_scigraph_response(text, tool_name="query_cypher"):
         papers.append({
             "title": name,
             "abstract": description,
-            "year": 2024,
+            "year": _extract_year(item, "year", "publication_year"),
             "doi": cid,
             "source_type": "Knowledge_Graph",
             "confidence": "medium",
@@ -631,7 +657,7 @@ def _parse_scholar_response(text, tool_name="query_paper"):
             papers.append({
                 "title": str(title),
                 "abstract": str(abstract),
-                "year": item.get("year", item.get("publication_year", 2024)),
+                "year": _extract_year(item, "year", "publication_year"),
                 "doi": item.get("doi", item.get("paper_id", item.get("matched_node_id", ""))),
                 "source_type": "Scholar_KG",
                 "confidence": "medium",
@@ -678,7 +704,7 @@ def _parse_generic_response(text, tool_name=""):
         papers.append({
             "title": str(title),
             "abstract": item.get("abstract", item.get("description", "")),
-            "year": item.get("year", item.get("publication_year", 2024)),
+            "year": _extract_year(item, "year", "publication_year"),
             "doi": item.get("doi", item.get("chembl_id", item.get("id", ""))),
             "source_type": item.get("source_type", tool_name or "Database_record"),
             "confidence": "medium",
@@ -690,8 +716,9 @@ def _parse_generic_response(text, tool_name=""):
 # ──────────────────────────────────────────────────────────────────────
 # 工具注册表（FINAL — 经实际 API 调用验证）
 # 格式: {简化名: (MCP路径, MCP工具名, 领域, 证据类型, 参数构建器, 响应解析器, 额外配置)}
-# ──────────────────────────────────────────────────────────────────────
-
+# evidence_type 必须是 evidence_weights.json 的 evidence_weights 段中的标准键，
+# 由 call_gateway 的 _inject_standard_type 注入到每篇论文的 type 字段，
+# 确保 score_evidence.infer_type 直接命中 EVIDENCE_WEIGHTS 而不走 default_weight(0.3)。
 TOOL_REGISTRY = {
     "sciverse": (
         "/mcp/43/Sciverse", "search_papers", "general", "Patent",
@@ -699,17 +726,17 @@ TOOL_REGISTRY = {
         {"top_k_param": "page_size", "top_k_max": 50}
     ),
     "semantic_search": (
-        "/mcp/43/Sciverse", "semantic_search", "general", "PubMed_literature",
+        "/mcp/43/Sciverse", "semantic_search", "general", "Journal_article",
         _args_search, _parse_semantic_search_response,
         {"top_k_param": "top_k", "top_k_max": 30}
     ),
     "origene-ncbi": (
-        "/mcp/9/Origene-NCBI", "get_gene_metadata_by_gene_name", "biotech", "NCBI_database",
+        "/mcp/9/Origene-NCBI", "get_gene_metadata_by_gene_name", "biotech", "External_validation",
         _args_name_search, _parse_ncbi_response,
         {"name_param": "name"}
     ),
     "origene-search": (
-        "/mcp/7/Origene-Search", "pubmed_search", "general", "PubMed_literature",
+        "/mcp/7/Origene-Search", "pubmed_search", "general", "Journal_article",
         _args_search, _parse_pubmed_text_response,
         {}
     ),
@@ -719,17 +746,17 @@ TOOL_REGISTRY = {
         {"subject": "cs"}
     ),
     "origene-chembl": (
-        "/mcp/4/Origene-ChEMBL", "search_activity", "drug", "ChEMBL_compound",
+        "/mcp/4/Origene-ChEMBL", "search_activity", "drug", "Journal_article",
         _args_query_str, _parse_chembl_response,
         {}
     ),
     "origene-pubchem": (
-        "/mcp/8/Origene-PubChem", "search_pubchem_by_name", "chemistry", "ChEMBL_compound",
+        "/mcp/8/Origene-PubChem", "search_pubchem_by_name", "chemistry", "Journal_article",
         _args_name_search, _parse_pubchem_response,
         {"name_param": "name"}
     ),
     "origene-fdadrug": (
-        "/mcp/14/Origene-FDADrug", "get_active_ingredient_info_by_drug_name", "regulatory", "FDA_NMPA",
+        "/mcp/14/Origene-FDADrug", "get_active_ingredient_info_by_drug_name", "regulatory", "FDA_NMPA_approval",
         _args_drug_search, _parse_fdadrug_response,
         {}
     ),
@@ -739,7 +766,7 @@ TOOL_REGISTRY = {
         {}
     ),
     "origene-tcga": (
-        "/mcp/11/Origene-TCGA", "tcga_differential_expression_analysis", "oncology", "NCBI_database",
+        "/mcp/11/Origene-TCGA", "tcga_differential_expression_analysis", "oncology", "External_validation",
         _args_tcga, _parse_generic_response,
         {"allow_mock_fallback": True}
     ),
@@ -768,23 +795,29 @@ _DOMAIN_TOOL_MAP = {
     "knowledge": "scholar-kg",
 }
 
+# 工具数量单一事实源（P0-3）：所有文档引用此常量，禁止硬编码数字。
+# 口径：11 个工具 / 10 个端点（Sciverse 端点提供 search_papers + semantic_search 两个工具）。
+TOOL_COUNT = len(TOOL_REGISTRY)
+ENDPOINT_COUNT = len({entry[0] for entry in TOOL_REGISTRY.values()})
+
 
 # ──────────────────────────────────────────────────────────────────────
 # Mock 数据生成
 # ──────────────────────────────────────────────────────────────────────
 
-def _mock_paper(tool_name, evidence_type, query, rank):
-    """生成单条 per-tool mock 证据。"""
+def _mock_paper(tool_name: str, evidence_type: str, query: str, rank: int) -> dict:
+    """生成单条 per-tool mock 证据。is_mock:true 强制隔离，下游 score_evidence 不计入有效论文。"""
     return {
         "rank": rank,
         "title": f"[{tool_name}] Mock evidence #{rank} for query '{query}'",
         "abstract": "Mock fallback record generated because the MCP API Key was missing or the gateway was unreachable.",
-        "year": 2024,
+        "year": None,
         "doi": f"10.0000/mock.{tool_name.replace('-', '')}.{rank}",
         "source_type": evidence_type,
         "confidence": "medium",
         "tags": [tool_name, "mock_fallback"],
         "tool": tool_name,
+        "is_mock": True,
     }
 
 
@@ -942,7 +975,7 @@ def _normalize_mcp_response(text, parser, mcp_tool_name):
                         papers.append({
                             "title": str(item.get("title", item.get("name", json.dumps(item, ensure_ascii=False)[:80]))),
                             "abstract": str(item.get("abstract", item.get("description", ""))),
-                            "year": item.get("year", 2024),
+                            "year": _extract_year(item, "year", "publication_year"),
                             "doi": item.get("doi", ""),
                             "source_type": "MCP_data",
                             "confidence": "low",
@@ -955,7 +988,22 @@ def _normalize_mcp_response(text, parser, mcp_tool_name):
     return None
 
 
-def call_gateway(tool_name, query, top_k, max_retries=1):
+def _inject_standard_type(papers: list[dict], evidence_type: str) -> list[dict]:
+    """把工具标准证据类型注入每篇论文的 type 字段。
+
+    优先级：papers 已有的 type > 工具 evidence_type > 不注入（交给 normalize_type）。
+    确保 score_evidence.infer_type 直接命中 EVIDENCE_WEIGHTS 标准键，
+    避免 SCP 数据库工具（FDA/NCBI/ChEMBL 等）被误判为 Unknown 后按 default_weight(0.3) 计分。
+    """
+    if not papers:
+        return papers
+    for p in papers:
+        if not p.get("type"):
+            p["type"] = evidence_type
+    return papers
+
+
+def call_gateway(tool_name: str, query: str, top_k: int, max_retries: int = 1) -> tuple[Optional[dict], bool, str]:
     """向 SCP MCP 网关发起真实请求。返回 (result_dict, ok_bool, error_type_or_None)。
 
     使用单一 SCP_HUB_API_KEY 认证，通过 MCP Streamable HTTP 协议调用工具。
@@ -1029,6 +1077,7 @@ def call_gateway(tool_name, query, top_k, max_retries=1):
                 papers = _normalize_mcp_response(text, parser, mcp_tool)
 
                 if papers:
+                    papers = _inject_standard_type(papers, evidence_type)
                     for i, p in enumerate(papers, 1):
                         p["rank"] = i
                         if "match_score" not in p:
@@ -1060,7 +1109,8 @@ def call_gateway(tool_name, query, top_k, max_retries=1):
                                 tool_name, query, top_k,
                                 warning="TCGA backend is currently unreachable. Connection refused."
                             )
-                            return mock_result, True, None
+                            # ok=False：mock 不当成功；error_type="mock_fallback" 供调用方透传嵌入的 mock
+                            return mock_result, False, "mock_fallback"
 
                     if tool_name == "scigraph-material" and text:
                         for fallback_kg in ["ElementKG", "MatKG"]:
@@ -1078,6 +1128,7 @@ def call_gateway(tool_name, query, top_k, max_retries=1):
                                         f"INFO: SciGraph fallback KG '{fallback_kg}' returned {len(papers_fb)} results.",
                                         file=sys.stderr
                                     )
+                                    papers_fb = _inject_standard_type(papers_fb, evidence_type)
                                     for i, p in enumerate(papers_fb, 1):
                                         p["rank"] = i
                                         if "match_score" not in p:
@@ -1093,6 +1144,44 @@ def call_gateway(tool_name, query, top_k, max_retries=1):
                                         "papers": papers_fb,
                                     }
                                     return data, True, None
+
+                    # 区分「后端返回空结果」与「JSON 解析失败」两种语义。
+                    # 空结果（success=true 但 count=0/data=[]）是后端正常响应，不应标 parse_error。
+                    is_empty_result = False
+                    if text:
+                        try:
+                            payload = json.loads(text)
+                            if isinstance(payload, dict):
+                                count_val = payload.get("count", None)
+                                data_val = payload.get("data", None)
+                                if count_val == 0 or (isinstance(data_val, list) and len(data_val) == 0):
+                                    is_empty_result = True
+                        except (json.JSONDecodeError, TypeError):
+                            pass
+
+                    if is_empty_result:
+                        # 后端正常返回但无匹配节点：返回空 papers + empty_result 状态
+                        # 不走 mock 兜底，让上层（如 search_papers._try_scp_delegate）
+                        # 触发领域 fallback（hardware/material → sciverse 学术文献）
+                        print(
+                            f"INFO [empty_result]: MCP backend returned no matches for {tool_name}.\n"
+                            f"  Tool: {mcp_tool}, Endpoint: {mcp_path}\n"
+                            f"  This is a normal empty response, not a parse failure. "
+                            f"Caller should try domain fallback (e.g. hardware → sciverse).",
+                            file=sys.stderr
+                        )
+                        empty_data = {
+                            "status": "empty_result",
+                            "tool": tool_name,
+                            "query": query,
+                            "top_k": top_k,
+                            "domain": domain,
+                            "evidence_type": evidence_type,
+                            "count": 0,
+                            "papers": [],
+                        }
+                        # ok=False 触发上层 fallback 逻辑；error_type=empty_result 供调用方分流
+                        return empty_data, False, "empty_result"
 
                     print(
                         f"WARNING [parse_error]: MCP call succeeded but response could not be parsed for {tool_name}.\n"
@@ -1200,27 +1289,12 @@ def call_gateway(tool_name, query, top_k, max_retries=1):
 # ──────────────────────────────────────────────────────────────────────
 
 def _load_dotenv():
-    """从脚本所在目录及上级目录查找 .env 文件并加载到 os.environ。"""
-    from pathlib import Path
+    """从脚本所在目录及上级目录查找 .env 文件并加载到 os.environ。
 
-    current = Path(__file__).resolve().parent
-    for directory in [current] + list(current.parents)[:3]:
-        env_path = directory / ".env"
-        if env_path.is_file():
-            try:
-                with open(env_path, encoding="utf-8") as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line or line.startswith("#") or "=" not in line:
-                            continue
-                        key, _, value = line.partition("=")
-                        key = key.strip()
-                        value = value.strip().strip('"').strip("'")
-                        if key and key not in os.environ:
-                            os.environ[key] = value
-            except Exception:
-                pass
-            break
+    已委托 config_loader.load_dotenv 实现，保留函数名以兼容现有调用点。
+    """
+    from config_loader import load_dotenv
+    load_dotenv()
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -1229,6 +1303,12 @@ def _load_dotenv():
 
 def main():
     _load_dotenv()
+    # 首次运行引导：检测 SCP_HUB_API_KEY 缺失时交互式引导用户输入
+    try:
+        from key_setup import ensure_scp_key
+        ensure_scp_key()
+    except ImportError:
+        pass  # key_setup 模块不可用时静默跳过，保持向后兼容
     parser = argparse.ArgumentParser(
         description="SCP 专业数据工具 MCP 网关客户端 — 通过 MCP Streamable HTTP 协议调用 11 个数据工具。",
     )

@@ -10,3 +10,27 @@ venv/
 .idea/
 .vscode/
 .DS_Store
+.tmp_*.json
+.tmp_*
+
+# IDE / 内部开发产物（不开源）
+.trae/
+debug-evidence-audit-runtime.md
+
+# OpenClaw 本地工作区文件（agent 人设/配置/临时产物，不属于本 skill，不开源）
+.openclaw/
+.openclaw-attachments/
+AGENTS.md
+SOUL.md
+IDENTITY.md
+TOOLS.md
+USER.md
+HEARTBEAT.md
+MEMORY.md
+memory/
+
+# 内部验收报告与本地文档
+docs/
+
+# macOS 元文件
+*.DS_Store

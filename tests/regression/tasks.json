@@ -1,0 +1,104 @@
+{
+  "_comment": "端到端回归任务集（P2-1）。kind=output_validation：对已归档交付样本跑全量校验并统计各校验项通过率；kind=score_check：对证据 fixture 跑确定性计分并与期望比对（level/valid_evidence_count/max_core_base_weight）。current_year 固定 2026 保证年份衰减可复现。交付物随真实运行持续补充。",
+  "current_year": 2026,
+  "min_pass_rate": 0.8,
+  "tasks": [
+    {
+      "id": "dr-l0",
+      "name": "DR 深度学习分类（L0 卡片）",
+      "kind": "output_validation",
+      "level": "L0",
+      "output": "examples/card_output_golden.md",
+      "score": "examples/card_output_golden.score.json"
+    },
+    {
+      "id": "dr-l1",
+      "name": "DR 深度学习分类（L1 精简）",
+      "kind": "output_validation",
+      "level": "L1",
+      "output": "examples/brief_output_golden.md",
+      "score": "examples/brief_output_golden.score.json"
+    },
+    {
+      "id": "dr-l2",
+      "name": "DR 深度学习分类（L2 完整审计）",
+      "kind": "output_validation",
+      "level": "L2",
+      "output": "examples/full_output_golden.md",
+      "score": "examples/full_output_golden.score.json"
+    },
+    {
+      "id": "empty-l2",
+      "name": "空检索兜底场景（L2）",
+      "kind": "output_validation",
+      "level": "L2",
+      "output": "examples/empty_retrieval_golden.md",
+      "score": null
+    },
+    {
+      "id": "cgm-hardware",
+      "name": "柔性可穿戴 CGM（硬件域计分回归）",
+      "kind": "score_check",
+      "domain": "hardware",
+      "papers": "tests/regression/fixtures/cgm_papers.json",
+      "expect": {
+        "level": "yellow",
+        "valid_evidence_count": 4,
+        "max_core_base_weight": 2.0,
+        "core_evidence_threshold": 2.0
+      }
+    },
+    {
+      "id": "ecg-hardware",
+      "name": "可穿戴心电监测（硬件域计分回归）",
+      "kind": "score_check",
+      "domain": "hardware",
+      "papers": "tests/regression/fixtures/ecg_papers.json",
+      "expect": {
+        "level": "yellow",
+        "valid_evidence_count": 3,
+        "max_core_base_weight": 2.0,
+        "core_evidence_threshold": 2.0
+      }
+    },
+    {
+      "id": "psych-social",
+      "name": "指尖作业心理疲劳（社科域计分回归）",
+      "kind": "score_check",
+      "domain": "psychology",
+      "papers": "tests/regression/fixtures/psych_papers.json",
+      "expect": {
+        "level": "yellow",
+        "valid_evidence_count": 4,
+        "max_core_base_weight": 2.5,
+        "core_evidence_threshold": 2.5
+      }
+    },
+    {
+      "id": "edu-social",
+      "name": "自适应学习路径推荐（教育域计分回归）",
+      "kind": "score_check",
+      "domain": "education",
+      "papers": "tests/regression/fixtures/edu_papers.json",
+      "expect": {
+        "level": "green",
+        "valid_evidence_count": 3,
+        "max_core_base_weight": 5.0,
+        "core_evidence_threshold": 2.5
+      }
+    },
+    {
+      "id": "dr-ai-score",
+      "name": "DR 文献锚点（AI 域计分回归，与黄金样本同源）",
+      "kind": "score_check",
+      "domain": "AI",
+      "papers": "examples/dr_papers.json",
+      "expect": {
+        "level": "green",
+        "valid_evidence_count": 7,
+        "max_core_base_weight": 5.0,
+        "core_evidence_threshold": 1.5
+      }
+    }
+  ]
+}

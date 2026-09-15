@@ -1,0 +1,32 @@
+[
+  {
+    "rank": 1,
+    "title": "A randomized controlled trial of CRISPR-Cas9 gene editing",
+    "abstract": "Double-blind RCT with 200 patients",
+    "year": 2024,
+    "doi": "10.1038/s41586-024-01234-5",
+    "source_type": "RCT",
+    "type": "RCT",
+    "confidence": "high"
+  },
+  {
+    "rank": 2,
+    "title": "Systematic review of flexible sensors for glucose monitoring",
+    "abstract": "Cochrane systematic review",
+    "year": 2023,
+    "doi": "10.1186/s12916-023-02345-6",
+    "source_type": "Systematic_review",
+    "type": "Systematic_review",
+    "confidence": "high"
+  },
+  {
+    "rank": 3,
+    "title": "Wearable electrochemical sensors: a review",
+    "abstract": "Journal article reviewing wearable sensors",
+    "year": 2022,
+    "doi": "10.1016/j.bioelechem.2022.02.001",
+    "source_type": "Journal_article",
+    "type": "Journal_article",
+    "confidence": "medium"
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "rank": 1,
+    "title": "FDA approval: Continuous glucose monitoring system",
+    "abstract": "FDA 510(k) approval record",
+    "year": 2023,
+    "doi": "DEN180001",
+    "source_type": "FDA_Drug",
+    "type": "FDA_NMPA_approval",
+    "confidence": "high"
+  }
+]

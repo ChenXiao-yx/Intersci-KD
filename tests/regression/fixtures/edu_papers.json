@@ -1,0 +1,26 @@
+[
+  {
+    "rank": 1,
+    "title": "Systematic review of adaptive learning path algorithms in K-12 (2024)",
+    "year": 2024,
+    "doi": "10.1007/s10648-024-09700-2",
+    "type": "Systematic_review",
+    "confidence": "high"
+  },
+  {
+    "rank": 2,
+    "title": "Knowledge-tracing model deployed in classroom pilot (prototype report, 2025)",
+    "year": 2025,
+    "doi": "10.1145/EDM.2025.007",
+    "type": "Prototype_implementation",
+    "confidence": "medium"
+  },
+  {
+    "rank": 3,
+    "title": "Randomized controlled trial of AI tutoring on math outcomes (2025)",
+    "year": 2025,
+    "doi": "10.3102/0002831225-001",
+    "type": "RCT",
+    "confidence": "high"
+  }
+]

@@ -12,6 +12,30 @@
 | 提供 ≥1 篇具体论文 | 锚定蒸馏 | SKILL.md §2 |
 | 仅有方向描述 | 图谱生成（默认） | SKILL.md §2 |
 
+## 1b. 我该输出哪个档位？
+
+| 用户输入特征 | 档位 | 输出 |
+| :--- | :--- | :--- |
+| 无关键词（默认） | **仅 L0，暂停等待** | 30秒卡片 + 定位问题（A/B/C）+ 展开选项 |
+| "快速/结论/30秒" | 只给 L0 | 30 秒决策卡片 |
+| "精简/3分钟"/"继续" | 只给 L1 | 五块结构 |
+| "完整/标准/详细" | 只给 L2 | 完整十章 |
+| "审计/JSON/专家" | L2 + 计分明细日志 | 十章 + JSON 审计日志 |
+| "直接出报告" | L0→L1→L2 连续（例外） | 三档，分别校验 |
+
+**默认仅 L0**：用户不指定档位时，首轮只输出 L0 卡片并暂停，不自动展开；定位回答（A/B/C）是 L1/L2 结论方向的输入。**结论前置**：L0 结论必须在第一行可见。
+
+## 1c. 黑话检查清单（输出前必查）
+
+**用户输出中禁止出现以下术语**（违反则输出无效）：
+
+- 内部规则编号：§1、§14、规则1、规则2、规则3
+- 脚本/文件名：score_evidence.py、validate_output.py、search_papers.py、scp_tools.py、SKILL.md、output-template.md、plain-language-map.md、evidence-rubric.md
+- 配置键名：threshold_note、CORE_EVIDENCE_THRESHOLD、mode_router、rule2_triggered、mock_fallback、valid_evidence_count、detailed_scores、base_weight、decay_factor、confidence_multiplier
+- 内部架构术语：L1/L2/L3/L4 推理层、双层三档、审计层、展示层
+
+**必须翻译成人话**：见 output-template.md 术语对照表。每写完一段检查是否有泄漏。
+
 ## 2. 计分时怎么查表？
 
 | 要查什么 | 去哪里查 |
@@ -28,13 +52,17 @@
 3. 规则3（外部对标偏差>1.5×）→ 硬终止
 **详细定义**：SKILL.md §4
 
-## 4. 输出章节速查
+## 4. 输出档位速查
 
-| 用户要求 | 输出章节 |
-| :--- | :--- |
-| “轻量/快速/初筛” | 第零章 + 第七章 + 第九章 |
-| “专家/审计/完整日志” | 全十章 + 末尾 JSON 审计日志 |
-| 默认（无关键词） | 全十章 |
+| 用户要求 | 档位 | 输出 |
+| :--- | :--- | :--- |
+| 无关键词（默认） | 仅 L0，暂停等待 | 30秒卡片 + 定位问题 + 展开选项 |
+| "快速/结论/30秒" | 只给 L0 | 30 秒决策卡片（结论第一行） |
+| "精简/3分钟"/"继续" | 只给 L1 | 五块结构 |
+| "完整/标准/详细" | 只给 L2 | 全十章 |
+| "审计/JSON/专家" | L2 + 计分明细日志 | 全十章 + 末尾 JSON 审计日志 |
+
+**关键规则（v4.4.1）**：默认**仅输出 L0 并暂停**，用户指令逐档展开；校验器必须显式传 `--level L0/L1/L2/L3`，禁止省略。
 
 ## 5. 脚本故障自救
 
@@ -43,3 +71,11 @@
 | search_papers.py 报错 | WebSearch 手动抽 10 条 | 第九章 |
 | score_evidence.py 报错 | AI 手算（逐条按 evidence-rubric.md 查表） | 第九章 |
 | scp_tools.py 不可用 | 自动 Mock，继续执行 | 第九章（标注模拟数据） |
+
+## 6. 输出校验（交付前必跑）
+
+| 校验项 | 命令 | 失败处理 |
+| :--- | :--- | :--- |
+| 全量校验 | `python scripts/validate_output.py --input <简报.md> --level <L0/L1/L2/L3> --json <score.json>` | 修复后重跑，硬失败=0 才交付（20 项编号检查，含指令泄漏检测） |
+| 单独计分校验 | `python scripts/score_evidence.py --input-json <papers.json> --domain <域>` | 确认 level/valid_evidence_count/rule2_triggered |
+| §14 矩阵强校验 | validate_output.py 自动执行 | 中等等级不得写优先整合；弱等级且有效论文<3不得写持续追踪 |

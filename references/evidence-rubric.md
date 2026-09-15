@@ -6,22 +6,28 @@
 
 ## §1 证据权重表（Evidence Weights）
 
-完整 18 种证据类型及权重（来自原 unified_config.yaml）：
+完整 24 种证据类型及权重（与 `scripts/config/evidence_weights.json` 一致，评分器实际加载此表）：
 
 | 证据类型 | 权重 | 说明 |
 | :--- | :--- | :--- |
-| FDA_NMPA / CE_mark | 5.0 | 最高等级：药监审批/认证 |
+| FDA_NMPA_approval | 5.0 | 最高等级：NMPA/FDA 批准（监管批准进 core） |
+| CE_mark | 5.0 | 最高等级：CE 认证（监管批准进 core） |
 | RCT | 5.0 | 随机对照试验 |
-| Meta_analysis | 2.5 | Meta 分析（汇总多项研究） |
-| Industry_standard | 3.0 | 行业标准/规范/指南 |
+| Guideline | 4.0 | 临床指南 |
+| Industry_standard | 3.0 | 行业标准/规范 |
 | Patent | 3.0 | 专利文献 |
-| NCBI_database | 2.5 | NCBI 数据库（基因/变异数据） |
-| Systematic_review | 2.0 | 系统综述 |
-| ChEMBL_compound | 2.0 | ChEMBL 化合物/活性数据 |
-| PubMed_literature | 2.0 | PubMed 文献/学术论文 |
+| Diagnostic_accuracy | 3.0 | 诊断准确性研究 |
+| Meta_analysis | 2.5 | Meta 分析（汇总多项研究） |
+| Systematic_review | 2.5 | 系统综述 |
+| External_validation | 2.5 | 外部验证研究 |
+| Cohort_study | 2.0 | 队列研究 |
+| Case_control | 2.0 | 病例对照研究 |
+| Literature_review | 1.5 | 普通综述文献（叙述性综述） |
 | Prototype_implementation | 1.5 | 原型实现/硬件 fabricated |
-| Literature_review | 1.5 | 普通综述文献 |
-| Algorithm_benchmark | 1.0 | 算法基准评测 |
+| Benchmark_study | 1.5 | 基准评测研究 |
+| Regulatory | 1.0 | 非批准类监管文件（警告/召回/公告，进 supplemental） |
+| Journal_article | 1.0 | 普通期刊论文 |
+| Conference_paper | 1.0 | 会议论文 |
 | Animal_experiment | 1.0 | 动物实验 |
 | Case_study | 1.0 | 病例研究/个案 |
 | In_vitro_study | 1.0 | 体外实验/细胞实验 |
@@ -29,6 +35,15 @@
 | Expert_opinion | 0.5 | 专家意见/共识 |
 | News_report | 0.5 | 新闻报道/媒体发布 |
 | （未分类默认值） | 0.3 | 未识别类型的兜底权重 |
+
+**知识图谱概念类型**（§13 工具映射引用，配置层不直接加载；落表计分前由 `normalize_type` 按 venue/DOI 归一化到上表标准类型）：
+
+| 概念类型 | 文档权重 | 归一化去向 |
+| :--- | :--- | :--- |
+| PubMed_literature | 2.0 | Journal_article（或按 venue DOI 映射） |
+| NCBI_database | 2.5 | External_validation / 对应研究类型 |
+| ChEMBL_compound | 2.0 | Journal_article / 对应数据来源类型 |
+| Algorithm_benchmark | 1.0 | Benchmark_study（1.5）或 Conference_paper（1.0） |
 
 ---
 
@@ -56,13 +71,13 @@
 
 计算公式（距今 8 年示例）：`max(0.3, 1 - (8-5)*0.05) = max(0.3, 0.85) = 0.85`
 
-**证据总分等级阈值**：
+**证据总分等级阈值**（满分 8.0，≥8.0 为强证据门槛）：
 
-| 等级 | 阈值 | 标签符号 |
-| :--- | :--- | :--- |
-| green（绿） | 总分 ≥ 8.0 | 🟢 |
-| yellow（黄） | 4.0 ≤ 总分 < 8.0 | 🟡 |
-| red（红） | 总分 < 4.0 | 🔴 |
+| 等级 | 阈值 | 人话标签 | 标签符号 |
+| :--- | :--- | :--- | :--- |
+| green（绿） | 总分 ≥ 8.0 | 强 | 🟢 |
+| yellow（黄） | 4.0 ≤ 总分 < 8.0 | 中 | 🟡 |
+| red（红） | 总分 < 4.0 | 弱 | 🔴 |
 
 ---
 
@@ -100,17 +115,27 @@
 
 ## §5 领域证据权重复用映射表（domain_map）
 
-新增领域时，优先复用现有领域的权重体系，避免重复配置。
+新增领域时，优先复用现有领域的权重体系，避免重复配置。**完整映射见 `scripts/config/evidence_weights.json` 的 `domain_map` 段**，下表仅列示例；两者必须一致，修改时同步。
 
-| 新增领域键 | 复用的权重域 | 说明 |
+| 领域键 | 复用的权重域 | 说明 |
 | :--- | :--- | :--- |
 | biotech | biotech | 生物医药默认权重集 |
-| hardware | biotech | 硬件复用硬科技权重集 |
 | social | social | 社会科学权重集 |
+| business | business | 商业自有权重集 |
+| hardware | hardware | 智能硬件自有权重集 |
+| AI | AI | AI/ML 自有权重集 |
+| drug | drug | 药物化学自有权重集 |
+| regulatory | regulatory | 法规/监管自有权重集 |
+| oncology | oncology | 肿瘤学自有权重集 |
+| chemistry | chemistry | 化学自有权重集 |
+| material | material | 新材料自有权重集 |
+| patent | patent | 专利分析自有权重集 |
+| knowledge | knowledge | 知识图谱自有权重集 |
 | education | social | 教育复用社科权重集 |
 | psychology | social | 心理复用社科权重集 |
-| business | business | 商业自有权重集 |
-| （其他新领域） | biotech | 默认兜底，复用硬科技权重集 |
+| default | biotech | 默认兜底，复用硬科技权重集 |
+
+> **注意**：未在 `domain_map` 中的 domain 会导致 `score_evidence.py` 的 `resolve_domain` 显式报错（`ValueError: Unknown domain`），不再静默回退 `biotech`。新增领域必须在 `domain_map` 中显式注册。
 
 ---
 
@@ -205,20 +230,21 @@
 
 ## §9 数据工具 → 证据类型 → 权重映射表
 
-本表映射 10 个 SCP 专业数据工具到其主返回证据类型与对应权重（权重取自 §1），供 L1 确定性计分层查表使用。AI 在调用 `scripts/scp_tools.py` 获取证据后，按本表确定证据类型，再交由 `scripts/score_evidence.py` 计分。
+本表映射 11 个 SCP 专业数据工具（10 个 MCP 端点，单一事实源见 scp_tools.py TOOL_COUNT/ENDPOINT_COUNT）到其主返回证据类型与对应权重（权重取自 §1），供 L1 确定性计分层查表使用。AI 在调用 `scripts/scp_tools.py` 获取证据后，按本表确定证据类型，再交由 `scripts/score_evidence.py` 计分。
 
 | 数据工具 | 主返回证据类型 | 对应权重 | §1 出处 |
 | :--- | :--- | :--- | :--- |
-| Origene-Search | PubMed_literature | 2.0 | §1 学术论文行 |
-| Origene-NCBI | NCBI_database | 2.5 | §1 NCBI 数据库行 |
-| Origene-ChEMBL | ChEMBL_compound | 2.0 | §1 ChEMBL 化合物行 |
-| Scholar-KG | Systematic_review | 2.0 | §1 系统综述行 |
-| Origene-TCGA | NCBI_database | 2.5 | §1 NCBI 数据库行（基因组数据复用） |
+| Origene-Search | Journal_article | 1.0 | §1 普通期刊论文行 |
+| Origene-NCBI | External_validation | 2.5 | §1 外部验证行 |
+| Origene-ChEMBL | Journal_article | 1.0 | §1 普通期刊论文行 |
+| Scholar-KG | Systematic_review | 2.5 | §1 系统综述行 |
+| Origene-TCGA | External_validation | 2.5 | §1 外部验证行（基因组数据复用） |
 | Origene-OpenTargets | Meta_analysis | 2.5 | §1 Meta 分析行（靶点-疾病聚合） |
-| Origene-FDADrug | FDA_NMPA | 5.0 | §1 FDA/NMPA 行（最高等级） |
-| Origene-PubChem | ChEMBL_compound | 2.0 | §1 ChEMBL 化合物行（化学信息复用） |
+| Origene-FDADrug | FDA_NMPA_approval | 5.0 | §1 FDA/NMPA 批准行（最高等级） |
+| Origene-PubChem | Journal_article | 1.0 | §1 普通期刊论文行（化学信息复用） |
 | SciGraph-Material | Industry_standard | 3.0 | §1 行业标准行 |
 | Sciverse | Patent | 3.0 | §1 专利文献行 |
+| Semantic Search | Journal_article | 1.0 | §1 普通期刊论文行 |
 
 **使用说明**：同一工具返回的多条证据可能分属不同子类型（如 Origene-Search 既可能返回 RCT 也可能返回综述），本表给出的是该工具的"主返回类型"作为默认映射；AI 在逐条识别证据类型时，若某条证据明显匹配更高权重的类型（如 Origene-Search 返回的某篇论文实际是 RCT），应按实际类型取权重，而非受限于本表的默认映射。这一规则与 §1"若一条证据同时命中多个类型关键词，取权重最高的那个类型"的原则一致。
 
@@ -263,13 +289,13 @@
 ---
 
 ## §13 证据总分等级阈值
-（迁移自 SKILL.md 原章节 3.4）
+（满分 8.0，≥8.0 为强证据门槛；迁移自 SKILL.md 原章节 3.4）
 
-| 等级 | 总分阈值 | 含义 |
-| :--- | :--- | :--- |
-| 🟢 green | ≥ 8.0 | 证据充分，蒸馏结论可信度高 |
-| 🟡 yellow | 4.0 ~ 7.99 | 证据中等，部分关键判断仍需补充 |
-| 🔴 red | < 4.0 | 证据薄弱，蒸馏结论仅供参考 |
+| 等级 | 总分阈值 | 人话标签 | 含义 |
+| :--- | :--- | :--- | :--- |
+| 🟢 green | ≥ 8.0 | 强 | 证据充分，蒸馏结论可信度高 |
+| 🟡 yellow | 4.0 ~ 7.99 | 中 | 证据中等，部分关键判断仍需补充 |
+| 🔴 red | < 4.0 | 弱 | 证据薄弱，蒸馏结论仅供参考 |
 
 三个等级对应的后续处理策略如下：green 等级的证据可以支撑大部分判断标注为【确证】，蒸馏简报的整体解释力度较强，可用于支撑正式决策；yellow 等级的证据可支撑中等置信度的判断，部分关键交叉点仍建议追加一轮定向文献检索或专家咨询；red 等级的证据仅能支撑【推断】级别判断，蒸馏结论参考价值有限，建议用户提供更多关键词或补充具体论文后重新执行蒸馏。总分等级仅用于蒸馏前的闸口检查和蒸馏后的置信度参考，是第九章三选一结论判定的输入之一，完整判定标准见 §14 三选一结论判定矩阵。yellow 等级是最常见的中间状态，绝大多数蒸馏任务都会落在这个区间，AI 不必刻意追求 green 等级。
 
@@ -278,15 +304,66 @@
 ## §14 三选一结论判定标准矩阵
 （迁移自 SKILL.md 原章节 3.5）
 
-第九章三选一结论（建议优先整合 / 建议持续追踪 / 建议暂时搁置）不是凭 LLM 直觉选择，而是按以下判定矩阵确定。判定时按从严格到宽松的顺序逐条检查，命中第一条即定论，不再继续向下判断：
+第九章三选一结论（建议优先整合 / 建议持续追踪 / 建议暂时搁置 / 证据不足，无法给出方向性结论）不是凭 LLM 直觉选择，而是按以下判定矩阵确定。判定时按从严格到宽松的顺序逐条检查，命中第一条即定论，不再继续向下判断：
 
 | 结论 | 判定条件（须全部满足） |
 | :--- | :--- |
+| 证据不足，无法给出方向性结论 | `score_evidence.py` 输出 `level=="insufficient"`（即 `max_core_base_weight` 低于核心证据门槛：全局 2.5，AI 域 1.5、硬件/材料域 2.0，见 §14.2），**无论总分多高**都直接命中此行，不得跳到下面的 green/yellow/red 分支 |
 | 建议优先整合 | 证据等级 green（≥8.0）且有效论文 ≥3 条且第七章无未消解的核心冲突且第二章已识别出可执行的跨学科整合路径 |
-| 建议持续追踪 | 证据等级 yellow（4.0~7.99）或有效论文 1~2 条或存在部分消解的冲突但交叉方向值得继续跟踪（最常见的默认结论） |
-| 建议暂时搁置 | 证据等级 red（<4.0 但 ≥0.5 已通过闸口）或有效论文为 0（降级后）或第七章核心冲突无法消解且无任何可识别的整合路径 |
+| 建议持续追踪 | 证据等级 yellow（4.0~7.99）或有效论文 1~2 条或存在部分消解的冲突但交叉方向值得继续跟踪或**红区但有效论文 ≥3 条（权重低但有真实证据，常见于 AI 算法研究领域会议论文为主）**或**证据等级 green 但第七章存在未消解的核心冲突**（最常见于算法侧成熟、临床侧欠收的交叉点，如 DR 深度学习分类） |
+| 建议暂时搁置 | 证据等级 red（<4.0）**且有效论文 <3 条**，或有效论文为 0（降级后），或第七章核心冲突无法消解且无任何可识别的整合路径 |
 
-若上述三条均无法明确命中（极少见的边界情形），默认采用「建议持续追踪」并在第九章坦诚中说明判定边界模糊的原因。快思维第零章给出的直觉结论若与本矩阵判定结果冲突，以本矩阵为准，并在第九章坦诚声明中披露这一分歧。本矩阵是第九章结论的唯一判定依据，取代任何其他章节中关于结论选择的描述。
+**insufficient 分支说明**（必须严格遵守）：
+- `level=="insufficient"` 是 `score_evidence.py` 在 `max_core_base_weight < CORE_EVIDENCE_THRESHOLD (2.5)` 时直接返回的等级，**不再走"算高分再 cap 到 yellow"的旧逻辑**。
+- 命中 insufficient 时，结论只能是「证据不足，无法给出方向性结论」，**严禁**套用 yellow 的"建议持续追踪"或 red 的"建议暂时搁置"。
+- L0 卡片不显示三选一结论符号，改显示「⚪ 证据不足」+ 一句话理由（说明缺哪类核心证据）。
+- 第九章"结论依据"必须引用 `threshold_note` 字段原文（如"max_base_weight=1.0<2.5"）。
+- `validate_output.py` 的 `CONCLUSION_OPTIONS` 已含「证据不足，无法给出方向性结论」，命中此行时文本结论必须与该字符串完全一致。
+
+若上述四条均无法明确命中（极少见的边界情形），默认采用「建议持续追踪」并在第九章坦诚中说明判定边界模糊的原因。快思维第零章给出的直觉结论若与本矩阵判定结果冲突，以本矩阵为准，并在第九章坦诚声明中披露这一分歧。本矩阵是第九章结论的唯一判定依据，取代任何其他章节中关于结论选择的描述。
+
+### §14.1 与第九章强校验（L0/L1/L2/L3 全档位强制）
+
+L0 卡片、L1 五块、L2 十章、L3 JSON 审计日志中的"结论"字段必须与按本 §14 矩阵判定的结果**完全一致**，不得有任何偏差。`scripts/validate_output.py` 会对以下强校验项硬失败：
+
+1. **黄区不得写"优先整合"**：若 `score_evidence.py` 输出 `level=="yellow"`，第九章/L0 卡片结论只能是「建议持续追踪」或「建议暂时搁置」，**严禁**出现「建议优先整合」。违反 → 校验失败。（注：未达核心证据门槛的情形现在直接判 `insufficient`，不再 cap 到 yellow，见上一条。）
+2. **红区 + 有效论文 <3 不得写"优先整合"或"持续追踪"**：若 `level=="red"` 且 `valid_evidence_count < 3`，结论只能是「建议暂时搁置」。**例外**：若 `level=="red"` 但 `valid_evidence_count ≥ 3`（权重低但有真实证据，常见于 AI 算法研究领域会议论文为主），允许写「建议持续追踪」，但必须在第九章坦诚中声明"红区但有效证据≥3 条，证据权重低但真实存在"。
+3. **有效论文为 0（含全 mock）不得写"优先整合"**：`score_evidence.py` 输出 `rule2_triggered==true` 或 `valid_evidence_count==0` 时，结论只能是「建议暂时搁置」，且 L0 卡片顶部必须显示"模拟数据"红条，不得输出三选一结论（改显示"需你决策"）。
+4. **L0 卡片结论字段 == L3 JSON `conclusion` 字段**：两档位输出虽渲染形式不同，但底层数据必须同源。校验器会比较两者的规范化字符串（去符号、去空白、小写）。
+5. **绿区 + 有效论文≥3 + 无未消解冲突 + 有整合路径** → 必须「建议优先整合」；不得写「持续追踪」或「搁置」（除非用户显式要求降级并在第九章声明）。
+6. **insufficient 不得套用三选一**：若 `score_evidence.py` 输出 `level=="insufficient"`（`threshold_note` 含 "insufficient: no core evidence"），结论只能是「证据不足，无法给出方向性结论」，**严禁**写"建议优先整合/持续追踪/暂时搁置"任一。L0 卡片不显示三选一符号，改显示「⚪ 证据不足」。违反 → 校验失败。
+
+### §14.2 核心证据门槛与 §14 矩阵的联动
+
+`score_evidence.py` 的核心证据门槛逻辑（全局 `core_evidence_threshold=2.5`，支持域级覆盖）：
+
+- **域级门槛（P1-1）**：`evidence_weights.json` 的 `core_evidence_threshold_by_domain` 允许按域覆盖全局 2.5——当前 **AI=1.5、hardware=2.0、material=2.0**，域级值优先。设计理由：这些域以会议论文、基准测试与原型实现为主要证据形态，单条基础权重天然低于临床/监管域（AI 会议论文经域权重覆盖后 1.5、硬件原型实现 2.0）；若无覆盖，纯 AI 会议论文方向即使有 20 篇真实可验证文献也会永远判 insufficient。域级阈值只降低"是否有一条像样硬证据"的判定线，**不改变 green/yellow/red 的 8.0/4.0 分界**；临床/监管等其余域维持 2.5 不变。若这些域的全部核心证据仍低于域级门槛，判 insufficient 仍是预期行为——正确动作是补检系统综述/RCT/监管文件，而非继续降门槛。实际使用的门槛值随计分结果输出（`core_evidence_threshold` 字段），可审计。
+- **insufficient 优先判定**：若 core 层的 `max_core_base_weight` 低于该域有效门槛，直接返回 `level="insufficient"`，`threshold_note` 含 "insufficient: no core evidence"。§14 矩阵按 insufficient 行判定 → 结论只能是「证据不足，无法给出方向性结论」。**此规则覆盖任何"总分≥8.0 应当 green"的直觉判断**。
+- **旧"cap 到 yellow"逻辑已废弃**：不再出现"core_evidence_threshold_capped_to_yellow"字段。若 `threshold_note` 含 "insufficient" 前缀，等级就是 insufficient，不是 yellow。
+- 若 core 层的 `max_core_base_weight >= 2.5`，正常走 green/yellow/red 分支，等级判定用 `total_core`（仅 core 层加权分），不用 `total_score`（含 supplemental）。
+
+### §14.3 证据分层规则（tier 判定）
+
+`score_evidence.py` 对每条证据打 `tier` 标签，分三层：
+
+| 层级 | 判定条件 | 用途 |
+| :--- | :--- | :--- |
+| core | 同行评审原始研究/综述/**监管批准**，有 DOI + 有年份 + 非 mock + 非 duplicate + 非格式错误 + 非未来年份 + 非预印本 | 等级判定（total_core）+ 核心证据门槛（max_core_base_weight） |
+| supplemental | 非批准类监管文件 / 预印本 / 待核验条目（DOI 未核验或未来年份） | 仅展示计分供审计，不计入等级判定 |
+| reference | 缺 DOI 或缺年份的纯参考条目 | 不计入任何有效计数 |
+
+**监管批准进 core**：`FDA_NMPA_approval`、`CE_mark` 是监管机构对临床有效性的正式确认，属于硬证据，进 core 参与等级判定。其他监管文件（警告、召回、非批准类公告）进 supplemental。
+**注意**：监管批准进 core 后，单条 5.0 可使 `max_core_base_weight` 直接达标、`total_core` 显著上升，可能触发 green。若第七章存在未消解核心冲突，§14 矩阵的 green+冲突分支会将其结论固定为「建议持续追踪」，不会被误判为「优先整合」。
+**预印本识别**（满足任一即判预印本）：`is_preprint=True`，或 DOI 以 `arxiv:` 开头，或 source 含 `arxiv.org`，或 DOI 含 DataCite 形式的 arXiv 标识 `10.48550/arxiv`（大小写不敏感；该形式 DOI 是预印本注册标识，不得按普通期刊 DOI 进 core）。
+**未来年份识别**：year > current_year（支持 int / float / 数字型字符串，统一强转后比较）。
+
+**等级判定流程**：
+1. 遍历证据，按上述规则打 tier 标签
+2. 累计 `total_core`（仅 core 层加权分）与 `total_supplemental`（supplemental 层加权分）
+3. 检查 `max_core_base_weight`（仅 core 层的最大基础权重，含监管批准）
+4. 若 `max_core_base_weight` 低于域级有效门槛（§14.2）→ insufficient
+5. 否则按 `total_core` 判定：≥8.0 green / 4.0-7.99 yellow / <4.0 red
+6. `total_score`（含 supplemental）仅作审计展示，不参与等级判定
 
 ---
 

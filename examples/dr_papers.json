@@ -1,0 +1,82 @@
+[
+  {
+    "rank": 1,
+    "title": "Gulshan et al., Development and Validation of a Deep Learning Algorithm for Detection of Diabetic Retinopathy in Retinal Fundus Photographs (2016)",
+    "year": 2016,
+    "doi": "10.1001/jama.2016.17216",
+    "type": "Diagnostic_accuracy",
+    "confidence": "high"
+  },
+  {
+    "rank": 2,
+    "title": "FDA De Novo: IDx-DR autonomous AI diagnostic system (DEN180001, 2018)",
+    "year": 2018,
+    "doi": "DEN180001",
+    "type": "FDA_NMPA_approval",
+    "confidence": "high"
+  },
+  {
+    "rank": 3,
+    "title": "Hunfeld et al., Real-world performance of IDx-DR in 875 patients (2026)",
+    "year": 2026,
+    "doi": "PMC12864748",
+    "type": "Journal_article",
+    "confidence": "high"
+  },
+  {
+    "rank": 4,
+    "title": "Rajesh et al., Artificial intelligence and diabetic retinopathy: a review (2023)",
+    "year": 2023,
+    "doi": "10.2337/dci23-0032",
+    "type": "Systematic_review",
+    "confidence": "medium"
+  },
+  {
+    "rank": 5,
+    "title": "Chopra et al., Deep learning for DR screening: evolution and challenges (2025, preprint)",
+    "year": 2025,
+    "doi": "arXiv:2511.11065",
+    "type": "Journal_article",
+    "confidence": "low"
+  },
+  {
+    "rank": 6,
+    "title": "DRStageNet: multi-source domain adaptation for DR grading across 7 public datasets (2023, preprint)",
+    "year": 2023,
+    "doi": "arXiv:2312.14891",
+    "type": "Journal_article",
+    "confidence": "low"
+  },
+  {
+    "rank": 7,
+    "title": "Ting et al., Development and validation of a deep learning system for multi-retinal disease detection (2017)",
+    "year": 2017,
+    "doi": "10.1038/nm.4345",
+    "type": "Journal_article",
+    "confidence": "high"
+  },
+  {
+    "rank": 8,
+    "title": "Abramoff et al., Pivotal trial of an autonomous AI-based diagnostic system for DR (2018)",
+    "year": 2018,
+    "doi": "10.1016/j.ophtha.2018.03.014",
+    "type": "Journal_article",
+    "confidence": "high"
+  },
+  {
+    "rank": 9,
+    "title": "Chen et al., Cross-modal transfer with knowledge injection for DR grading (2024)",
+    "year": 2024,
+    "doi": "10.3389/fmed.2024.1400137",
+    "type": "Journal_article",
+    "confidence": "medium"
+  },
+  {
+    "rank": 10,
+    "title": "Dong et al., Progress of artificial intelligence in diabetic retinopathy (2024)",
+    "year": 2024,
+    "doi": "10.3877/cma.j.issn.2095-2007.2024.01.010",
+    "type": "Literature_review",
+    "confidence": "medium"
+  }
+]

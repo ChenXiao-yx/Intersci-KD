@@ -1,0 +1,26 @@
+[
+  {
+    "rank": 1,
+    "title": "Low-power wearable ECG SoC with on-device arrhythmia classification (2025)",
+    "year": 2025,
+    "doi": "10.1109/JSSC.2025.001",
+    "type": "Prototype_implementation",
+    "confidence": "high"
+  },
+  {
+    "rank": 2,
+    "title": "Benchmark of CNN-based arrhythmia detectors across datasets (2023)",
+    "year": 2023,
+    "doi": "10.1109/TBME.2023.002",
+    "type": "Benchmark_study",
+    "confidence": "high"
+  },
+  {
+    "rank": 3,
+    "title": "Self-supervised ECG representation learning for AF detection (2025)",
+    "year": 2025,
+    "doi": "10.1109/ISSCC.2025.003",
+    "type": "Conference_paper",
+    "confidence": "high"
+  }
+]

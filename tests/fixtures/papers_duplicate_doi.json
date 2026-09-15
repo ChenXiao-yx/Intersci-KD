@@ -1,0 +1,24 @@
+[
+  {
+    "rank": 1,
+    "title": "Paper A about flexible sensors",
+    "abstract": "First occurrence",
+    "year": 2023,
+    "doi": "10.1109/SENSOR.2023.12345",
+    "source_type": "Conference_paper",
+    "type": "Conference_paper",
+    "confidence": "high",
+    "is_duplicate": false
+  },
+  {
+    "rank": 2,
+    "title": "Paper B (duplicate of A)",
+    "abstract": "Second occurrence, same DOI",
+    "year": 2023,
+    "doi": "10.1109/SENSOR.2023.12345",
+    "source_type": "Conference_paper",
+    "type": "Conference_paper",
+    "confidence": "high",
+    "is_duplicate": true
+  }
+]
