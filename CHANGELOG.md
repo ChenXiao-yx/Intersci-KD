@@ -129,6 +129,15 @@
 69. 🔀 P1-4（评估第四节机制问题）：--live 新增 --live-allow-llm-error 开关（后端不可达不置退出码 1）；README 明确 CI 使用建议（--live 放独立 job或用该开关）。实测：--live-allow-llm-error EXIT=0 / strict EXIT=1
 70. ⏳ P1-1/P1-2（跑 live 拿真实数据 + 据此裁剪规则）仍待可用 LLM 后端——两个 .env 后端均不可达的现状未变，这是当前唯一无法在本地闭环的事项
 
+**v4.6.4-skill（2026-09-16）：第五轮清单（P0×3 + P1×2 + P2 留档）**
+
+71. 🐍 P0-1 citation_lookup.py PEP 585/604 彻底清零：上轮只修了 _request_json 一处，漏掉 lookup_by_dois/enrich_papers_with_citations 的 4 处签名与变量注解（list[str]/dict[str, dict | None]）——全部改 typing.Dict/List/Optional 风格；其余 5 个含内置泛型注解的脚本（score_evidence/scp_tools/search_papers/validate_output/run_regression）统一加 `from __future__ import annotations`（注解延迟求值，3.8/3.9 安全）；全仓复扫清零。危险性确认：search_papers 的 try/except 会把 3.8/3.9 上的 ImportError 变成静默降级、【低影响力】枚举永远不激活——正是评估说的最危险形态
+72. 📄 P0-2 .gitignore 验证与加固：live_runs/ 已在上轮入 .gitignore（git check-ignore 双向验证：live_runs 被忽略 ✓、freeform_samples 未被忽略 ✓——后者是需提交的样本目录）；补 tests/regression/*.citations.json 排除（citation_lookup 的查询缓存）；check_consistency.py 新增 _check_gitignore_patterns（live_runs 不在 .gitignore 即 FAIL），文档漂移 CI 闭环
+73. 🧪 P0-3 退出码判定抽纯函数：run_regression.main 的退出码逻辑抽为 _decide_exit_code(task_results, live_results, below_threshold, regressions, allow_llm_error)；新建 tests/test_regression.py 7 个用例覆盖开关语义（llm_error 默认 fail / allow 后放行 / live 违规不影响退出码 / 离线硬失败 / 低于阈值 / 基线回退 / 全绿）+ 3 个 Python 兼容用例；"声称实测无回归用例"的不一致消除
+74. 🔁 P1-2 语法对账机制化：check_consistency.py 新增 _check_python_syntax_compat——pyproject 声明 <3.10 时，scripts/ 下无 __future__ 的文件出现 PEP 604/585 注解即 FAIL（跳过有 __future__ 的文件）；负向自检通过（临时塞 PEP604 文件 → EXIT=1）。这正是 P0-1 溜过的盲区，现在 CI 能拦住
+75. 📄 P1-1 EXECUTION_CHECKLIST 第 4 节去重（方案 A）：档位速查表删除，改一行指针指向顶部 1b 快速通道（单一事实源）；"仅 L0，暂停等待"等判定行全仓仅出现一次
+76. ⏳ P1-3/P2-1 留档：freeform/live 基线仍空。路径 A（--live）需可用后端；路径 B（手工喂样本）需"另一台 LLM 的原始输出"——本助手自身生成再归档即属自证、违反 freeform_samples/README.md 纪律，故不代做。待任一外部 LLM 输出放入 freeform_samples/dr-freeform-l0.md 后，--update-baseline 即产生第一份真实遵守率数据，P2-1 裁剪据此启动
+
 ---
 
-**当前版本：4.6.3-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）
+**当前版本：4.6.4-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）

@@ -10,7 +10,7 @@ license: MIT
 tags: [knowledge-distillation, cross-disciplinary, evidence-based, research-analysis,
   decision-support, systematic-review, evidence-gap-analysis, research-priority,
   domain-mapping, conflict-resolution]
-version: "4.6.3-skill"
+version: "4.6.4-skill"
 author: InterSci-KD Team
 created: "2025-01-01"
 updated: "2026-09-15"

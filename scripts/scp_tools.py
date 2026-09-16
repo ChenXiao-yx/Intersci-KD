@@ -14,6 +14,7 @@
     认证 Header：SCP-HUB-API-KEY
     协议：MCP Streamable HTTP（JSON-RPC 2.0 over HTTP）
 """
+from __future__ import annotations
 import argparse
 import json
 import os

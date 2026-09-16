@@ -3,6 +3,7 @@
 P1-1 计分签名：每次计分输出含 scored_by / scored_by_version / scored_at 三个字段，
 供 validate_output.py 第 21 项验证计分结果确实由本脚本产出（防 LLM 手写绕过）。
 """
+from __future__ import annotations
 import argparse
 import json
 import re
@@ -12,7 +13,7 @@ from datetime import datetime
 
 from config_loader import get_valid_domains
 
-__version__ = "4.6.3"
+__version__ = "4.6.4"
 
 # 标准 DOI 正则：10.XXXX/...（XXXX 至少 4 位数字）
 # 用于 has_doi 判定，避免把 "DEN180001"、"10.0000/mock" 等非标准编号当 DOI

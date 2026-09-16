@@ -27,6 +27,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+from typing import Dict, List, Optional
 
 S2_BASE = "https://api.semanticscholar.org/graph/v1"
 S2_FIELDS = "citationCount,influentialCitationCount,title,year"
@@ -61,11 +62,11 @@ def _request_json(url: str, data=None, headers=None) -> dict:
     raise RuntimeError(f"Semantic Scholar request failed: {last_err}")
 
 
-def lookup_by_dois(dois: list[str]) -> dict[str, dict | None]:
+def lookup_by_dois(dois: List[str]) -> Dict[str, Optional[dict]]:
     """批量查询 DOI 的被引数据。
 
     返回 {normalized_doi: {"citation_count": int, "influential_citation_count": int,
-                           "title": str, "year": int} | None}；
+                           "title": str, "year": int} 或 None}；
     未收录/查询失败的 DOI 值为 None（调用方走兜底规则，不得臆断低影响力）。
     """
     normalized = [str(d).strip().lower() for d in dois if d and str(d).strip()]
@@ -81,7 +82,7 @@ def lookup_by_dois(dois: list[str]) -> dict[str, dict | None]:
             seen.add(d)
             cleaned.append(d)
 
-    result: dict[str, dict | None] = {d: None for d in cleaned}
+    result: Dict[str, Optional[dict]] = {d: None for d in cleaned}
     if not cleaned:
         return result
 
@@ -106,15 +107,15 @@ def lookup_by_dois(dois: list[str]) -> dict[str, dict | None]:
     return result
 
 
-def enrich_papers_with_citations(papers: list[dict], existing=None) -> dict:
+def enrich_papers_with_citations(papers: List[dict], existing=None) -> dict:
     """给 papers 列表补 citation_count / influential_citation_count 字段。
 
-    返回 lookup 结果 dict（{doi: row|None}），供调用方持久化复用。
+    返回 lookup 结果 dict（{doi: row 或 None}），供调用方持久化复用。
     - 已有 citation_count 的条目跳过（尊重 SCP 工具返回的值）
     - 查询失败的条目不写 citation_count 字段（保持"缺失→无法验证"兜底语义）
     """
     # existing: 之前的 lookup 缓存（避免重复请求）
-    cache: dict[str, dict | None] = dict(existing or {})
+    cache: Dict[str, Optional[dict]] = dict(existing or {})
     need = []
     for p in papers:
         doi = str(p.get("doi", "")).strip().lower()

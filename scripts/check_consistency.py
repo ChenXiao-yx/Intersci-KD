@@ -8,6 +8,8 @@
 - conclusion_options.json ↔ validate_output.py 的 CONCLUSION_OPTIONS
 - disclaimer_phrases.json ↔ validate_output.py 的 DISCLAIMER_*
 - evidence_weights.json 的 domain_map ↔ search_papers/score_evidence 的 --domain choices
+- pyproject requires-python ↔ scripts/ 注解语法（PEP 604/585，第五轮 P1-2）
+- EXECUTION_CHECKLIST.md 的校验项数量 ↔ validate_output.py 实际（第四轮 P2）
 
 退出码：0=全部一致；1=发现不一致。
 """
@@ -90,12 +92,53 @@ def _check_tool_count_consistency(issues):
                 )
 
 
+def _check_python_syntax_compat(issues):
+    """第五轮 P1-2：确认代码注解语法与 pyproject 的 requires-python 兼容。
+
+    若声明 >=3.8/3.9，则 scripts/ 下（无 __future__ annotations 的文件）不应出现
+    PEP 604（`X | None`）或 PEP 585（`list[...]`/`dict[...]` 等）注解——这类语法
+    在低版本解释器 import 时直接 TypeError，而 search_papers 的 try/except 会把它
+    变成静默降级（如 citation_lookup 在 3.8 上失效），属于最危险的 bug 形态。
+    """
+    import re as _re
+    root = Path(__file__).resolve().parent.parent
+    py_text = (root / "pyproject.toml").read_text(encoding="utf-8")
+    m = _re.search(r'requires-python\s*=\s*["\']>=\s*(\d+)\.(\d+)', py_text)
+    if not m:
+        return
+    major, minor = int(m.group(1)), int(m.group(2))
+    if (major, minor) >= (3, 10):
+        return  # 3.10+ 无此约束
+    for py_file in sorted((root / "scripts").glob("*.py")):
+        text = py_file.read_text(encoding="utf-8")
+        if "from __future__ import annotations" in text:
+            continue  # 注解延迟求值，低版本安全
+        if _re.search(r":\s*\w+\s*\|\s*None", text) or _re.search(r"->\s*\w+\s*\|\s*None", text):
+            issues.append(f"{py_file.name} 含 PEP 604 语法，但 requires-python>={major}.{minor}")
+        if _re.search(r":\s*(list|dict|tuple|set)\[", text) or _re.search(r"->\s*\(?\w+\)?\s*(list|dict|tuple|set)\[", text):
+            issues.append(f"{py_file.name} 含 PEP 585 语法，但 requires-python>={major}.{minor}")
+
+
+def _check_gitignore_patterns(issues):
+    """第五轮 P0-2：确认 live_runs/（真实 LLM 输出）在 .gitignore 中。"""
+    root = Path(__file__).resolve().parent.parent
+    gi = root / ".gitignore"
+    if not gi.exists():
+        issues.append(".gitignore 缺失")
+        return
+    text = gi.read_text(encoding="utf-8")
+    if "live_runs" not in text:
+        issues.append(".gitignore 未包含 live_runs/（真实 LLM 输出会误提交）")
+
+
 def main():
     issues = []
 
     # 0. P0-1/P0-3：版本号与工具数对账（不依赖 config，先跑）
     _check_version_consistency(issues)
     _check_tool_count_consistency(issues)
+    _check_python_syntax_compat(issues)
+    _check_gitignore_patterns(issues)
 
     # 0.5 第四轮评估 P2：EXECUTION_CHECKLIST 的校验项数量表述与实际一致
     root = Path(__file__).resolve().parent.parent

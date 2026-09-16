@@ -41,6 +41,7 @@
 
 退出码：0=全部通过；1=有硬失败；2=命令行错误。
 """
+from __future__ import annotations
 import argparse
 import json
 import re

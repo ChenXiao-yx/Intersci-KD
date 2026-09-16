@@ -24,6 +24,7 @@
 当前基线是"理想输入→理想输出"的自证结果（全 1.0 属必然），其价值在于
 守护交付样本回归、并为将来接入真实 LLM 生成循环提供对照基线。
 """
+from __future__ import annotations
 import argparse
 import json
 import os
@@ -213,6 +214,24 @@ def _build_live_prompt(task: dict) -> str:
         f"结论三选一（优先整合/持续追踪/暂时搁置）；每句判断带【确证】/【推断】/【无法判断】标签；"
         f"末尾原样附加规定格式的免责声明；禁止出现任何内部术语（脚本名/档位代号/规则编号）。"
     )
+
+
+def _decide_exit_code(task_results: list, live_results: list,
+                      below_threshold: list, regressions: list,
+                      allow_llm_error: bool = False) -> int:
+    """退出码判定（第五轮 P0-3 抽出的纯函数，可单测）。
+
+    规则：
+    - 离线任务有硬失败 / 低于阈值项 / 基线回退 → 1；
+    - live 任务 llm_error（基础设施失败）→ 1，除非 allow_llm_error；
+    - live 的 LLM 违规（hard_failures）是交付物，不影响退出码。
+    """
+    any_fail = any(tr["hard_failures"] > 0 for tr in task_results)
+    live_llm_error = any(tr.get("status") == "llm_error" for tr in live_results)
+    if live_llm_error and allow_llm_error:
+        print("注意: --live-allow-llm-error 生效，后端不可达不置退出码 1", file=sys.stderr)
+        live_llm_error = False
+    return 1 if (any_fail or below_threshold or regressions or live_llm_error) else 0
 
 
 def run_live_task(task: dict, out_dir: Path, rounds: int = 1) -> dict:
@@ -430,13 +449,10 @@ def main() -> int:
     if regressions:
         print(f"⚠ 相对基线回退: {regressions}", file=sys.stderr)
 
-    any_fail = any(tr["hard_failures"] > 0 for tr in task_results)
-    live_llm_error = any(tr.get("status") == "llm_error" for tr in live_results)
-    if live_llm_error and getattr(args, "live_allow_llm_error", False):
-        print("注意: --live-allow-llm-error 生效，后端不可达不置退出码 1", file=sys.stderr)
-        live_llm_error = False
-    # live 的 hard_failures 是真实 LLM 违规数据（本身是交付物，不影响退出码）；退出码只看 llm_error。
-    return 1 if (any_fail or below_threshold or regressions or live_llm_error) else 0
+    return _decide_exit_code(
+        task_results, live_results, below_threshold, regressions,
+        allow_llm_error=getattr(args, "live_allow_llm_error", False),
+    )
 
 
 if __name__ == "__main__":
