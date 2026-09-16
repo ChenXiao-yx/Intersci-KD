@@ -133,6 +133,7 @@ intersci-kd-skill/
 ├── scripts/
 │   ├── scp_tools.py          # SCP MCP 网关客户端（11 个数据工具/10 个端点，TOOL_COUNT 单一事实源）
 │   ├── citation_lookup.py    # Semantic Scholar 被引数据查询（激活【低影响力】状态）
+│   ├── quality_judge.py      # 内容质量 5 维评分（挑战具体性/冲突支撑/验证可执行/坦诚度/可证伪性）
 │   ├── search_papers.py      # 论文检索 CLI（自动委托 SCP 工具）
 │   ├── score_evidence.py     # 证据计分引擎（mock 强隔离 + 域级核心证据门槛）
 │   ├── validate_output.py    # 输出校验器（21 项编号检查，--level 必填按档位执行）
@@ -158,7 +159,9 @@ intersci-kd-skill/
     ├── card_output_golden.score.json
     ├── brief_output_golden.md     # L1 精简档位黄金样本（DR 主题，与 L2 同源）
     ├── brief_output_golden.score.json
-    └── empty_retrieval_golden.md  # 空检索兜底场景黄金样本
+    ├── empty_retrieval_golden.md  # 空检索兜底场景黄金样本
+    └── composite_demo.md          # L0→L1→L2 三档连续输出演示（不参与 CI；档位校验以三份单档黄金样本为准）
+    └── composite_demo.md          # L0→L1→L2 三档连续输出演示（不参与 CI；档位校验以三份单档黄金样本为准）
 ```
 
 ## 回归与遵守率度量
@@ -188,6 +191,8 @@ python tests/regression/run_regression.py --update-baseline
 - `live_baseline`（`--live` 现场生成）：真实 LLM 回归循环的直接产物，**这是"低于 80% 即裁剪规则"减法机制的最可信数据源**——它会告诉你哪些规则 LLM 真的天天违反、哪些规则写了但从不被违反（后者可删）。
 
 **空检索样本的校验强度说明**：`empty_retrieval_golden.md` 仅含第零/九/十章（空检索兜底场景不需要完整十章）。在 L2 档位下第 16 项证据分数格式（无计分子表可校验）直接跳过；第 4 项标签密度、第 17 项去同质化虽会执行，但因样本内容量小/无证据表数据行，检测逻辑实质不触发——该任务验证的是"空检索场景不误报"，而非 L2 全量校验路径的完整覆盖（后者由 dr-l2 任务承担）。
+
+**内容质量维度（第五点评建议 1）**：格式遵守率之外，live/freeform 任务附带 `content_quality` 字段——quality_judge.py 对简报的 5 个内容维度打分（Q1 核心挑战具体性 / Q2 冲突证据支撑 / Q3 验证动作可执行 / Q4 坦诚度 / Q5 可证伪性，各 0~2，overall 0~10）。无 LLM 后端时用启发式（证据锚点密度+空话短语+动作信号，已按黄金样本标定 10/10）；有后端时用 LLM judge 真评审。该分数回答"简报内容好不好用"，与格式遵守率互补。
 
 低于 min_pass_rate（默认 80%）的校验项会列入"优先考虑删除该规则或改为脚本兜底"清单——按方案先做减法，不继续加提示词；live/freeform 数据接入后，该清单才有实际裁剪依据。
 

@@ -138,6 +138,26 @@
 75. 📄 P1-1 EXECUTION_CHECKLIST 第 4 节去重（方案 A）：档位速查表删除，改一行指针指向顶部 1b 快速通道（单一事实源）；"仅 L0，暂停等待"等判定行全仓仅出现一次
 76. ⏳ P1-3/P2-1 留档：freeform/live 基线仍空。路径 A（--live）需可用后端；路径 B（手工喂样本）需"另一台 LLM 的原始输出"——本助手自身生成再归档即属自证、违反 freeform_samples/README.md 纪律，故不代做。待任一外部 LLM 输出放入 freeform_samples/dr-freeform-l0.md 后，--update-baseline 即产生第一份真实遵守率数据，P2-1 裁剪据此启动
 
+**v4.7.0-skill（2026-09-16）：第六点评落地——从"格式合规"补"内容质量"**
+
+本批评的核心判断成立：21 项校验全部在验证"输出长得对"，没有一项回答"输出说得好"。本轮按其 ROI 建议落地 4 项，其余留档。
+
+77. 🎯 内容质量度量（建议 1，本轮最重要）：新建 scripts/quality_judge.py——对 L2 简报按 5 个内容维度打 0~2 分（Q1 核心挑战具体性/Q2 冲突证据支撑/Q3 验证动作可执行/Q4 坦诚度/Q5 可证伪性，overall 0~10）；两层判定：LLM judge（复用 .env 后端，temperature=0 真评审）优先，无后端时降级启发式（证据锚点密度+空话短语黑名单+可执行动作信号，已按黄金样本标定 10/10）；live/freeform 回归任务自动附带 content_quality 字段，与格式遵守率并列进入基线——这是"内容好不好用"维度的第一份度量基础设施
+78. 📄 evidence-rubric 去重（建议 3）：§10~§13 删除（与 §1~§3 重复，399→359 行）；其独有信息全部并入——§11 四类指标判定细则并入 §2、§12 年份取值边界规则并入 §3、§13 等级处理策略并入 §3、§10 多类型命中规则并入 §1；SKILL.md 三处 §10~§16 引用同步修正，全仓无悬空引用；§14~§16 编号不变（既有引用不受影响）
+79. 🧪 黄金样本纯化（建议 5）：full_output_golden.md 从 L0+L1+L2 三合一拆为纯 L2 单档（278→213 行）；三档连续输出演示移入 composite_demo.md（标注"不参与 CI"）；删除 validate_output.py 的 is_composite 特例分支——--level 语义回归纯正（L2 文本必须以第零章开篇），"测试样本与测试工具互相迁就"的信号消除；card/brief/full 三份单档样本各校各的，测试矩阵清晰
+80. ⚖️ 域门槛诚实化（风险 4）：rubric §14.2 与 SKILL.md 补"推演非实测"限制说明与明确回滚条件——域级值是原理推演而非实测标定，若 live/freeform 数据显示 AI=1.5 让应 insufficient 的方向系统性放行，立即调回 2.5（门槛是诚信底线，不为覆盖率妥协）
+81. 📌 未采纳留档：provider 抽象（建议 6）是正确的长线方向但属大重构，当前 SCP 是唯一可用检索源、citation_lookup 已验证独立 provider 可行性，待真实使用暴露需求再做；第 17 项去同质化拦截率预测（建议 2）等 live 数据；_need_supplemental_search 触发逻辑（建议 5）属优化项不影响正确性，留档
+
+**v4.7.1-skill（2026-09-16）：第七点评落地（可执行性优先的 4+4 项）**
+
+82. 🔍 独立复核记录：is_composite 在代码中清零（仅 docstring 保留废除说明）；rubric 无 §10~§13 悬空引用、全部 §X 引用可解析（§1~§9/§14~§16）；composite_demo.md 三段锚点完整；quality_judge 启发式经黄金样本标定 10/10、空话文本 ≤5 分（断言非恒真）；full golden 拆分后 L2 校验 21 项 hard_failures=0
+83. 🛡️ P2 三项校验增强（"黑名单换说法绕过"批评）：①第 19 项黑话检测加结构检测——`\w[-\w]*.(py|md|json)` 文件名模式直接拦截，不依赖枚举（换任何脚本名都拦得住）；②第 17 项去同质化升级为编辑距离相似度检测——连续 3 行归一化相似度 >0.80 即报"疑似换字式同质"（原来要求完全相同才报，每行改一个字即可绕过）；③第 18 项加模态检测——"预计/将会/未来X年/有望/或将/届时"等预测模态词 + 无引用 + 无【推断】→ 硬失败（检测模态而非具体年份，"未来三到四年"这类换说法同样拦住）
+84. 🌐 P1 providers/ 多源抽象（解 SCP 单点依赖）：新建 scripts/providers/base.py（EvidenceProvider 接口 + CrossrefProvider——免费无 Key 全学科 DOI 元数据）；search_papers.py 两个 mock 兜底点（search() 直调 + _try_scp_delegate 透传）在产生 mock 前先试 Crossref——能拿到真文献就不给假数据；实测：无效 Key → auth_error → crossref 返回 3 篇真实文献（is_mock=False）；mock 永远最后（is_mock 隔离不变）；新增 OpenAlex/arXiv provider 只需继承接口注册 PROVIDER_CHAIN
+85. 🔀 P0 live 通路补全：_llm_chat 后端链加 OPENAI 兼容端点（OPENAI_API_KEY/OPENAI_BASE_URL/OPENAI_MODEL，DeepSeek/Moonshot/本地 vLLM/Ollama 均可）——"真实数据无法产生"的最后一块拼图；配好后一条命令跑 `--live --live-rounds 3`
+86. 📌 search_papers 重复逻辑合并：search() 与 _try_scp_delegate() 的 ~40 行同构分支确认重复，但失败路径语义不同（直调 vs 委托透传），强合并需重构 force_real/empty_result/mock_fallback 三态流——本轮不合并（改动风险 > 重复维护成本），provider 层已消除大部分新增重复
+87. 📌 域级门槛重审（用 10~20 个真实方向标定 AI=1.5/social=2.0 是否放行了应 insufficient 的方向）依赖 provider 多源检索跑量 + live 数据，就绪后执行——回滚条件已在 rubric §14.2 留档
+88. 📌 assess_content_quality.py 独立评估器不再另建：quality_judge.py 已含同维度 5 维评分 + 两层判定（LLM judge/启发式）+ 回归集成，功能重叠
+
 ---
 
-**当前版本：4.6.4-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）
+**当前版本：4.7.1-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）

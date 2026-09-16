@@ -134,12 +134,16 @@ def run_freeform_task(task: dict, reg_dir: Path) -> dict:
             checks[num_i] = "warning"
         else:
             checks[num_i] = bool(ok)
+    # 第五点评建议 1：内容质量分（启发式粗筛；LLM judge 可用时为真评审）
+    quality = _content_quality(text)
     return {
         "task": task["name"], "id": task["id"], "level": task["level"],
         "kind": "llm_freeform", "status": "measured",
         "hard_failures": fails,
         "rewrite_count": sum(1 for v in checks.values() if v is False),
         "checks": checks,
+        "content_quality": ({"overall": quality["overall"], "mode": quality["mode"]}
+                            if quality else None),
     }
 
 
@@ -148,10 +152,23 @@ def run_freeform_task(task: dict, reg_dir: Path) -> dict:
 # 这是"低于 80% 即裁剪规则"减法机制的真实数据源。
 
 
+def _content_quality(text: str):
+    """内容质量分（第五点评建议 1）：quality_judge 启发式；失败返回 None 不阻塞回归。"""
+    try:
+        _SCRIPTS = str(_ROOT / "scripts")
+        if _SCRIPTS not in sys.path:
+            sys.path.insert(0, _SCRIPTS)
+        from quality_judge import judge
+        q = judge(text, prefer_llm=False)
+        return {"overall": q["overall"], "mode": q["mode"]}
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _llm_chat(prompt: str, max_tokens: int = 4096, temperature: float = 0.3) -> str:
     """调用 .env 配置的 OpenAI 兼容后端生成文本。
 
-    后端优先级：INTERNLM_API_KEY → COMPETITION_API_KEY（读 LLM_BACKEND 或依次可用者）。
+    后端优先级：LLM_BACKEND 指定 → INTERNLM → COMPETITION → OPENAI（任意兼容端点兜底）。
     生成纪律：temperature 压低到 0.3，减少随机性对遵守率度量的干扰。
     """
     _SCRIPTS = str(_ROOT / "scripts")
@@ -170,6 +187,10 @@ def _llm_chat(prompt: str, max_tokens: int = 4096, temperature: float = 0.3) -> 
     if os.environ.get("COMPETITION_API_KEY"):
         candidates.append(("competition", os.environ.get("COMPETITION_BASE_URL", ""),
                            os.environ["COMPETITION_API_KEY"], os.environ.get("COMPETITION_MODEL", "")))
+    # 通用 OpenAI 兼容端点兜底（第六点评 P0 路径 A）：DeepSeek/Moonshot/本地 vLLM/Ollama 均可
+    if os.environ.get("OPENAI_API_KEY"):
+        candidates.append(("openai", os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+                           os.environ["OPENAI_API_KEY"], os.environ.get("OPENAI_MODEL", "gpt-4o-mini")))
     if backend:
         candidates.sort(key=lambda c: 0 if c[0] == backend else 1)
     if not candidates:
@@ -268,10 +289,13 @@ def run_live_task(task: dict, out_dir: Path, rounds: int = 1) -> dict:
                 checks[num_i] = "warning"
             else:
                 checks[num_i] = bool(ok)
+        quality = _content_quality(text)
         rounds_results.append({"round": n, "status": "measured", "output": str(out_path),
                                "hard_failures": fails,
                                "rewrite_count": sum(1 for v in checks.values() if v is False),
-                               "checks": checks})
+                               "checks": checks,
+                               "content_quality": ({"overall": quality["overall"], "mode": quality["mode"]}
+                                                   if quality else None)})
         time.sleep(1)  # 限速礼貌间隔
 
     measured = [r for r in rounds_results if r["status"] == "measured"]
@@ -392,6 +416,7 @@ def main() -> int:
         "freeform_check_pass_rate": freeform_rates,
         "freeform_pending": [tr["id"] for tr in pending_freeform],
         "live_check_pass_rate": live_rates,
+        "_quality_note": "live/freeform 任务附 content_quality（quality_judge 5 维内容质量分：挑战具体性/冲突支撑/验证可执行/坦诚度/可证伪性，各 0~2，overall 0~10）——格式遵守率之外的内容维度信号。",
         "live_below_threshold": below_live,
         "_comment": "当前版本各校验项通过率基线。由 run_regression.py --update-baseline 生成；低于 min_pass_rate 的规则应优先删除或改为脚本兜底。check_pass_rate 来自黄金样本自证；freeform_check_pass_rate 来自已归档 LLM 样本；live_check_pass_rate 来自 --live 现场生成（真实遵守率，最可信的裁剪依据）。",
         "task_results": task_results + live_results,

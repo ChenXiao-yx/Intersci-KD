@@ -16,7 +16,10 @@ for p in (str(_SCRIPTS), str(_ROOT / "tests" / "regression")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+import os
+
 import run_regression as rr
+import search_papers
 
 
 class TestDecideExitCode:
@@ -90,3 +93,79 @@ class TestPythonCompat:
             code_only = "\n".join(l for l in text.split("\n") if not l.strip().startswith("#"))
             assert not re.search(r":\s*(list|dict|tuple|set)\[", code_only), \
                 f"{py.name} 含 PEP 585 裸泛型注解且无 __future__"
+
+
+class TestContentQuality:
+    """第五点评建议 1：内容质量度量（quality_judge）。"""
+
+    def test_heuristic_importable_and_runs(self):
+        import quality_judge as qj
+        golden = (_ROOT / "examples" / "full_output_golden.md").read_text(encoding="utf-8")
+        result = qj.heuristic_score(golden)
+        assert result["mode"] == "heuristic"
+        assert 0 <= result["overall"] <= 10
+        # 黄金样本是标定点：内容质量应接近满分（>=9）
+        assert result["overall"] >= 9, f"golden 标定分 {result['overall']} 过低"
+
+    def test_empty_sections_score_zero(self):
+        import quality_judge as qj
+        result = qj.heuristic_score("# 无章节内容\n\n一段普通文字。\n")
+        assert result["overall"] <= 4
+
+    def test_vague_phrases_penalized(self):
+        import quality_judge as qj
+        vague = (
+            "## 第零章：跨学科全景扫描\n\n本方向需进一步深入研究、加强产学研合作【推断】。\n"
+            "## 第七章：认知冲突与消解策略\n\n持续关注最新进展【推断】。\n"
+            "## 第八章：蒸馏验证路径\n\n构建关联图并交叉校验【推断】。\n"
+            "## 第九章：跨学科综合置信度\n\n一切良好【确证】。\n"
+        )
+        result = qj.heuristic_score(vague)
+        assert result["overall"] <= 5
+
+    def test_judge_degrades_gracefully(self):
+        """prefer_llm=True 但无后端时降级为启发式且不抛异常。"""
+        import quality_judge as qj
+        golden = (_ROOT / "examples" / "full_output_golden.md").read_text(encoding="utf-8")
+        result = qj.judge(golden, prefer_llm=True)
+        assert result["mode"] in ("llm", "heuristic")
+        assert "overall" in result
+
+
+
+class TestProviderFallback:
+    """第六点评 P1：Crossref 真实检索兜底（解 SCP 单点依赖）。"""
+
+    def test_crossref_provider_module(self):
+        """providers.base 可导入且 CrossrefProvider 可用。"""
+        from providers.base import CrossrefProvider, PROVIDER_CHAIN
+        assert any(p.name == "crossref" for p in PROVIDER_CHAIN)
+        assert CrossrefProvider().available() is True
+
+    def test_crossref_search_real(self):
+        """Crossref 实网检索返回真实 DOI 文献（无 Key、全学科）。"""
+        from providers.base import CrossrefProvider
+        papers = CrossrefProvider().search("diabetic retinopathy deep learning", 3)
+        assert len(papers) >= 1
+        for p in papers:
+            assert p["doi"].startswith("10.")
+            assert p["title"]
+            assert p.get("is_mock") is not True  # Crossref 真实文献，无 mock 标记
+            assert p.get("provider") == "crossref"
+
+    def test_search_fallback_returns_crossref(self):
+        """search_fallback 链返回 crossref 结果。"""
+        from providers.base import search_fallback
+        papers, name = search_fallback("wearable ECG sensor", 2)
+        assert name == "crossref"
+        assert papers and all(p["doi"] for p in papers)
+
+    def test_delegate_auth_error_falls_to_crossref(self):
+        """无效 Key → auth_error → Crossref 兜底返回真实文献（非 mock）。"""
+        os.environ["SCP_HUB_API_KEY"] = "invalid-test-key-12345"
+        result = search_papers._try_scp_delegate("wearable ECG sensor", 2, None)
+        assert result is not None
+        assert result["source"].startswith("providers:crossref")
+        for p in result["papers"]:
+            assert p.get("is_mock") is not True
+            assert p.get("doi", "").startswith("10.")

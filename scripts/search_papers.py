@@ -101,6 +101,18 @@ def search(query, top_k, domain, force_real=False):
             fb_papers = _handle_empty_result_fallback(tool_name, query, top_k, domain)
             if fb_papers is not None:
                 return fb_papers
+        # 第六点评 P1（解 SCP 单点依赖）：任何走向 mock 的失败路径，先试 Crossref
+        # 真实检索——mock 数据对真实研究没有价值，能拿到真文献就不给假数据。
+        try:
+            from providers.base import search_fallback
+            xr_papers, xr_name = search_fallback(query, top_k, domain)
+            if xr_papers:
+                print(f"INFO [provider_fallback]: 已用 {xr_name} 返回真实检索结果（SCP 不可用）。", file=sys.stderr)
+                for i, p in enumerate(xr_papers, 1):
+                    p["rank"] = i
+                return _enrich_papers(xr_papers)
+        except Exception as e:  # noqa: BLE001 — provider 失败继续走 mock
+            print(f"WARNING: provider fallback failed ({type(e).__name__}: {e})", file=sys.stderr)
         result = build_mock_result(tool_name, query, top_k)
         papers = result.get("papers", [])
         for i, p in enumerate(papers, 1):
@@ -296,6 +308,28 @@ def _try_scp_delegate(query, top_k, domain, force_real=False):
                 "papers": fb_papers,
                 "source": f"scp_tools:sciverse (fallback from {tool_name})",
             }
+
+    # 第六点评 P1（解 SCP 单点依赖）：所有将产生 mock 的失败路径（network/auth/server），
+    # 透传 mock 前先试 Crossref 真实检索——mock 数据对真实研究没有价值，能拿到真文献就不给假数据。
+    try:
+        from providers.base import search_fallback
+        xr_papers, xr_name = search_fallback(query, top_k, domain)
+        if xr_papers:
+            print(f"INFO [provider_fallback]: SCP 失败（{error_type}），已用 {xr_name} 返回真实检索结果。",
+                  file=sys.stderr)
+            for i, p in enumerate(xr_papers, 1):
+                p["rank"] = i
+            return {
+                "status": "success",
+                "query": query,
+                "top_k": top_k,
+                "domain": domain,
+                "count": len(xr_papers),
+                "papers": xr_papers,
+                "source": f"providers:{xr_name} (fallback from {tool_name})",
+            }
+    except Exception as e:  # noqa: BLE001 — provider 失败继续走 mock 透传
+        print(f"WARNING: provider fallback failed ({type(e).__name__}: {e})", file=sys.stderr)
 
     # error_type=="mock_fallback"：call_gateway 已嵌入带警告的 mock（如 TCGA 后端不可达），透传保留上下文
     if error_type == "mock_fallback" and result is not None:

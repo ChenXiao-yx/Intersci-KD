@@ -154,16 +154,9 @@ def check_chapter_zero_first(text, level=None):
     允许 front-matter（H1 标题、引用块元信息、`---` 分隔线），
     第一个 `## ` 二级标题必须是「第零章：跨学科全景扫描」。
 
-    P1-11：复合档位检测改为依赖 --level 参数而非内嵌标记。
-    若 --level L2 且文本首部是 L0 卡片，则允许第零章存在于 L2 段。
+    第五点评⑤：is_composite 特例分支已废除——三档复合演示移入 composite_demo.md（不参与 CI），
+    full/card/brief 三份黄金样本各为单档，--level 语义纯正：L2 文本必须以第零章开篇。
     """
-    # P1-11：复合档位下（level=L2 且文本含 L0 卡片特征），只要全文存在第零章标题即可
-    is_composite = (level == LEVEL_L2 and "证据：" in text and "核心证据分" in text)
-    if is_composite:
-        if CHAPTER_ZERO_TITLE in text:
-            return True, "复合档位 L0+L2：第零章存在于 L2 段，首屏为 L0 卡片（合法）"
-        return False, "复合档位但全文未找到「第零章：跨学科全景扫描」"
-
     for line in text.splitlines():
         s = line.strip()
         if not s:
@@ -856,11 +849,34 @@ def check_supporting_conclusion_diversity(text, level):
         conclusions.append(cells[5])  # 第 6 列（索引 5）= 支撑结论
     if len(conclusions) < 3:
         return True, "支撑结论列数据不足 3 行，跳过"
-    # 滑动窗口检测连续 3 行相同
+    # 滑动窗口检测：连续 3 行相同，或编辑距离过近（换几个字绕过同义反复也拦住）。
+    # 相似度阈值：长度相近的两串，归一化编辑距离（1 - dist/maxlen）> 0.8 视为同质。
+    def _similarity(a: str, b: str) -> float:
+        if a == b:
+            return 1.0
+        la, lb = len(a), len(b)
+        if not la or not lb:
+            return 0.0
+        prev = list(range(lb + 1))
+        for ia in range(1, la + 1):
+            cur = [ia] + [0] * lb
+            for ib in range(1, lb + 1):
+                cur[ib] = min(prev[ib] + 1, cur[ib - 1] + 1,
+                              prev[ib - 1] + (a[ia - 1] != b[ib - 1]))
+            prev = cur
+        return 1 - prev[lb] / max(la, lb)
+
     for i in range(len(conclusions) - 2):
-        if conclusions[i] and conclusions[i] == conclusions[i+1] == conclusions[i+2]:
-            preview = conclusions[i][:50]
-            return False, f"支撑结论连续 3 行相同：{preview!r}（第 {i+1}-{i+3} 行）"
+        trio = [x for x in conclusions[i:i + 3] if x]
+        if len(trio) < 3:
+            continue
+        if trio[0] == trio[1] == trio[2]:
+            return False, f"支撑结论连续 3 行相同：{trio[0][:50]!r}（第 {i+1}-{i+3} 行）"
+        pairs = [_similarity(trio[0], trio[1]), _similarity(trio[1], trio[2]), _similarity(trio[0], trio[2])]
+        if all(p > 0.8 for p in pairs):
+            return False, (f"支撑结论连续 3 行高度相似（相似度 "
+                           f"{pairs[0]:.2f}/{pairs[1]:.2f}/{pairs[2]:.2f} > 0.80，疑似换字式同质）："
+                           f"{trio[0][:40]!r}…（第 {i+1}-{i+3} 行）")
     return True, "支撑结论去同质化通过"
 
 
@@ -922,7 +938,8 @@ def check_unsupported_prediction_labels(text, level):
                 issues.append(f"机械升级路径未删除：{s[:60]!r}")
                 break
         else:
-            # 检查无依据预测关键词
+            # 检查无依据预测关键词（黑名单）
+            hit = False
             for kw in UNSUPPORTED_PREDICTION_KEYWORDS:
                 if re.search(kw, s):
                     # 该句是否含【推断】或引用
@@ -930,7 +947,14 @@ def check_unsupported_prediction_labels(text, level):
                     has_citation = bool(CITATION_PATTERN.search(s))
                     if not has_label and not has_citation:
                         issues.append(f"无依据预测未标注：{s[:60]!r}")
+                    hit = True
                     break
+            if not hit:
+                # 模态检测（第六点评 P2）：预测模态词 + 无引用 + 无【推断】→ 报错。
+                # 检测"模态"而非具体年份/数字——"未来三到四年"这类换说法同样拦住。
+                modal = bool(re.search(r"预计|将会|未来[一两三三五\d]+[年月个]|有望|或将|届时", s))
+                if modal and not INFER_LABEL in s and not CITATION_PATTERN.search(s):
+                    issues.append(f"预测模态未标注：{s[:60]!r}")
     if issues:
         return False, "; ".join(issues[:3])  # 最多报 3 条
     return True, "无依据预测标注通过"
@@ -1006,6 +1030,10 @@ def check_no_internal_jargon(text, level):
             end = min(len(clean_text), idx + len(jargon) + 20)
             context = clean_text[start:end].replace("\n", " ")
             issues.append(f"内部术语 {jargon!r} 出现在用户输出：...{context}...")
+    # 结构检测（第六点评 P2）：文件名模式（如 xxx.py/xxx.md/xxx.json）是内部实现的
+    # 强信号——不依赖枚举黑名单，LLM 换任何脚本名都拦得住。
+    for m in re.finditer(r"\b\w[-\w]*\.(?:py|md|json)\b", clean_text):
+        issues.append(f"疑似内部文件名 {m.group()!r} 出现在用户输出（结构检测）")
     # 内部章节/规则编号（§1、§14 等）正则扫描（同样剥离引用块/代码块）
     m_ref = INTERNAL_SECTION_REF.search(clean_text)
     if m_ref:
