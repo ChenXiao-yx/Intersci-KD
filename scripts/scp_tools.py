@@ -165,6 +165,10 @@ def _parse_sciverse_response(text, tool_name="search_papers"):
             "confidence": "high" if item.get("score", 0) > 0.8 else "medium",
             "authors": item.get("author", item.get("authors", "")),
             "journal": item.get("publication_venue_name_unified", item.get("journal", "")),
+            # 第三轮评估②：透传被引数据（若后端返回），缺失时不写字段 → 走【无法验证】兑底
+            **({"citation_count": item["citation_count"]} if item.get("citation_count") is not None else {}),
+            **({"influential_citation_count": item["influentialCitationCount"]}
+               if item.get("influentialCitationCount") is not None else {}),
         })
 
     return papers if papers else None
@@ -345,6 +349,8 @@ def _parse_ncbi_response(text, tool_name="get_gene_metadata_by_gene_name"):
                 "doi": gene.get("doi", gene.get("gene_id", "")),
                 "source_type": "NCBI_gene",
                 "confidence": "high",
+                # 第三轮评估②：透传被引数据（若后端返回）
+                **({"citation_count": gene["citation_count"]} if gene.get("citation_count") is not None else {}),
             })
 
     return papers if papers else None

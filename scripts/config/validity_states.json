@@ -1,5 +1,5 @@
 {
-  "_comment": "有效性状态 6 枚举。validate_output.py 与 output-template.md 同步引用。修改时请同步三处。",
+  "_comment": "有效性状态 6 枚举。validate_output.py 与 output-template.md 同步引用，修改时请同步三处。【低影响力】需 citation_count 数据支撑（scripts/citation_lookup.py，Semantic Scholar）；无被引数据时禁止使用该状态，按兜底规则判「无法验证」。",
   "validity_states": [
     "有效",
     "低影响力",

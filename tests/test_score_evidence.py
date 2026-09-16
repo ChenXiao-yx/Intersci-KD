@@ -72,8 +72,12 @@ class TestAIDomain:
         assert _resolve_core_threshold("hardware") == 2.0
         assert _resolve_core_threshold("material") == 2.0
         assert _resolve_core_threshold("biotech") == 2.5
+        # 社科域（第三轮评估③）：psychology/education 显式覆盖 2.0，social 同
+        assert _resolve_core_threshold("psychology") == 2.0
+        assert _resolve_core_threshold("education") == 2.0
+        assert _resolve_core_threshold("social") == 2.0
         # 未映射域经 DOMAIN_MAP 归一后回退全局
-        assert _resolve_core_threshold("psychology") == 2.5
+        assert _resolve_core_threshold("business") == 2.5
 
     def test_ai_conference_with_domain_threshold(self, papers_ai_conference, current_year):
         """AI 域会议论文 5 篇 → 域级门槛 1.5 下不判 insufficient。"""

@@ -132,6 +132,7 @@ intersci-kd-skill/
 ├── .gitignore
 ├── scripts/
 │   ├── scp_tools.py          # SCP MCP 网关客户端（11 个数据工具/10 个端点，TOOL_COUNT 单一事实源）
+│   ├── citation_lookup.py    # Semantic Scholar 被引数据查询（激活【低影响力】状态）
 │   ├── search_papers.py      # 论文检索 CLI（自动委托 SCP 工具）
 │   ├── score_evidence.py     # 证据计分引擎（mock 强隔离 + 域级核心证据门槛）
 │   ├── validate_output.py    # 输出校验器（21 项编号检查，--level 必填按档位执行）
@@ -163,18 +164,29 @@ intersci-kd-skill/
 ## 回归与遵守率度量
 
 ```bash
-# 全量回归（9 任务 + 20 项校验遵守率），对照基线检查回退
+# 全量回归（10 任务 + 21 项校验遵守率），对照基线检查回退
 python tests/regression/run_regression.py --baseline tests/regression/baseline.json
 
-# 交付物/证据变更后重写基线（跨年重跑计分会因年份衰减微降，也可借此重新锚定）
+# 真实 LLM 回归循环（第三轮评估①，最重要）：现场调用 LLM 生成 → 立即校验 → 统计真实遵守率。
+# 需在 .env 配置可用的 LLM 后端（INTERNLM_API_KEY 或 COMPETITION_API_KEY）。
+# 原始生成按轮次落盘 tests/regression/live_runs/ 供复查；低于 80% 的项自动列入真实裁剪清单。
+python tests/regression/run_regression.py --live --baseline tests/regression/baseline.json
+python tests/regression/run_regression.py --live --live-only      # 只跑 live 任务
+python tests/regression/run_regression.py --live --live-rounds 3  # 每任务采样 3 轮（更稳）
+
+# 交付物/证据变更后重写基线（跨年重跑计分会因年份衰减微降，也可借此重新锚定；
+# --live 后重写会把 live_baseline 一起更新）
 python tests/regression/run_regression.py --update-baseline
 ```
 
-**这套基线测的是什么（避免误读）**：output_validation 任务的输入是黄金样本（理想输出），校验对象也是黄金样本——"20 项遵守率全 1.0"是**必然结果而非真实 LLM 遵守率信号**。它的价值在于：(a) 交付样本或校验器被改动时立即暴露回归；(b) 作为接入真实 LLM 生成循环后的对照基线。真实遵守率看 `freeform_baseline`（llm_freeform 任务）：把 LLM 对同一任务自由生成的结果放入 `tests/regression/freeform_samples/`，回归会测出各项的**真实**通过率——那时才可能出现"第 17 项仅 60% 通过"这类能驱动规则裁剪的真信号。
+**三层基线，不要混读**：
+- `check_pass_rate`（黄金样本自证）：输入=理想输出，全 1.0 是必然结果，价值在回归守护，不是 LLM 遵守率；
+- `freeform_baseline`（已归档样本）：把 LLM 原始输出放入 `tests/regression/freeform_samples/` 后测出（见该目录 README 的供样纪律）；
+- `live_baseline`（`--live` 现场生成）：真实 LLM 回归循环的直接产物，**这是"低于 80% 即裁剪规则"减法机制的最可信数据源**——它会告诉你哪些规则 LLM 真的天天违反、哪些规则写了但从不被违反（后者可删）。
 
-**空检索样本的校验强度说明**：`empty_retrieval_golden.md` 仅含第零/九/十章（空检索兜底场景不需要完整十章）。在 L2 档位下第 16 项证据分数格式（无计分子表可校验）直接跳过；第 4 项标签密度、第 17 项去同质化虽会执行，但因样本内容量小/无证据表数据行，检测逻辑实质不触发——该任务验证的是"空检索场景不误报"，而非 L2 全量校验路径的完整覆盖（后者由 dr-l2 任务承担）。若需更强覆盖，可扩充该样本或新增空检索 L1 任务。
+**空检索样本的校验强度说明**：`empty_retrieval_golden.md` 仅含第零/九/十章（空检索兜底场景不需要完整十章）。在 L2 档位下第 16 项证据分数格式（无计分子表可校验）直接跳过；第 4 项标签密度、第 17 项去同质化虽会执行，但因样本内容量小/无证据表数据行，检测逻辑实质不触发——该任务验证的是"空检索场景不误报"，而非 L2 全量校验路径的完整覆盖（后者由 dr-l2 任务承担）。
 
-低于 min_pass_rate（默认 80%）的校验项会列入"优先考虑删除该规则或改为脚本兜底"清单——按方案 P2 原则，先做减法，不继续加提示词；接入真实 LLM 运行数据后，该清单才有实际裁剪依据。
+低于 min_pass_rate（默认 80%）的校验项会列入"优先考虑删除该规则或改为脚本兜底"清单——按方案先做减法，不继续加提示词；live/freeform 数据接入后，该清单才有实际裁剪依据。
 
 ## 免责声明
 

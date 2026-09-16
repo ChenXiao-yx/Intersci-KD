@@ -31,9 +31,12 @@
   "core_evidence_threshold_by_domain": {
     "AI": 1.5,
     "hardware": 2.0,
-    "material": 2.0
+    "material": 2.0,
+    "social": 2.0,
+    "education": 2.0,
+    "psychology": 2.0
   },
-  "_threshold_comment": "core 层无单条 base_weight≥有效门槛 → level 直接判 insufficient（不再 cap 到 yellow）。有效门槛 = core_evidence_threshold_by_domain[domain] 优先，回退 core_evidence_threshold（全局 2.5）。域级阈值的确定理由与新增域门槛确定流程见 references/evidence-rubric.md §14.2；阈值只降低硬证据判定线，不改变 green/yellow/red 的 8.0/4.0 分界。score_evidence.py 读取本文件作为单一事实源。",
+  "_threshold_comment": "core 层无单条 base_weight≥有效门槛 → level 直接判 insufficient（不再 cap 到 yellow）。有效门槛 = core_evidence_threshold_by_domain[domain] 优先，回退 core_evidence_threshold（全局 2.5）。域级阈值的确定理由与新增域门槛确定流程见 references/evidence-rubric.md §14.2；阈值只降低硬证据判定线，不改变 green/yellow/red 的 8.0/4.0 分界。AI/硬件/材料/社科（social及经 domain_map 映射的 education/psychology）域以会议论文、原型实现、队列与病例对照研究为主要证据形态，单条基础权重天然低于临床/监管域，允许较低门槛。score_evidence.py 读取本文件作为单一事实源。",
   "confidence_multipliers": {
     "high": 1.0,
     "medium": 0.5,

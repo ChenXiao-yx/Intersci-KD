@@ -112,6 +112,13 @@
 58. ⏸️ P2-1/P2-2 按方案建议暂缓：动态推导门槛（P2-1）保留显式配置+理由说明（P1-3 已补）；规则裁剪（P2-2）待 freeform_baseline 积累真实遵守率数据后按"低于 80%"信号选择性执行
 59. 🧪 测试 92→107 用例（+15：黑话三层 6 + 泄漏两层 3 + 计分签名 6）；回归任务 9→10（+dr-freeform-l0 pending）；SKILL.md 185 行
 
+**v4.6.2-skill（2026-09-16）：第三轮评估落地（真实 LLM 循环 + 死枚举激活 + 门槛公平性）**
+
+60. 🔁 评估第 1 项（最重要）——真实 LLM 回归循环：run_regression.py 新增 --live / --live-only / --live-rounds；_llm_chat 复用 .env 的 OpenAI 兼容后端（INTERNLM→COMPETITION，LLM_BACKEND 决定优先级，temperature 压至 0.3）；tasks.json 新增 kind=live 任务（live-dr-l0 / live-flex-sensor-l2）；原始生成按轮次落盘 live_runs/ 供复查；live 遵守率独立聚合为 live_check_pass_rate 与 live_below_threshold（真实裁剪信号）；baseline.json 新增 live_baseline 段；llm_error（基础设施失败）影响退出码，LLM 违规本身不影响（违规数据是交付物）。注：当前两个 LLM 后端均不可达（INTERNLM 域名 DNS 失败、COMPETITION 6443 拒绝连接且 8443 为 WAF），首次真实数据待后端恢复或更换 endpoint 后接入——基础设施已就绪
+61. 📊 评估第 2 项（方案 B）——【低影响力】死枚举激活：新建 scripts/citation_lookup.py（Semantic Scholar batch API，citationCount + influentialCitationCount，429 限速重试，DOI 归一化/预印本跳过/未收录返回 None 走兜底）；search_papers.py 的 _enrich_papers 自动为非 mock 条目补被引（失败静默不阻塞检索主链路）；scp_tools.py 的 sciverse/ncbi 解析器透传后端返回的被引字段；output-template.md 补判定标准（≥5 年且 citation_count<10、或 influential=0 且总被引<5 → 可判【低影响力】；第零章知识密度可凭 influential>0 从【推断】升【确证】）并收紧兜底规则（无被引数据禁止臆断低影响力，维持「无法验证」）
+62. ⚖️ 评估第 3 项——域级门槛公平性：core_evidence_threshold_by_domain 补 social=2.0（education/psychology 经 domain_map 映射继承），消除社科域"20 篇队列研究仍 insufficient"的系统性误判；rubric §14.2 理由表补 social 行、SKILL.md 门槛句同步、回归 tasks 期望值（psych/edu core_evidence_threshold→2.0，psych 的 max_core_base_weight 2.5 实为 Meta_analysis 全局权重不受门槛影响）；knowledge 域以 Industry_standard(3.0) 为主无需降，维持全局 2.5
+63. 📄 其余 5 项按评估意见不修（工具数正则已有 CI/CHANGELOG 对账已自动化/空检索样本影响面小/DOI 真伪是能力边界已有免责/规则总量待 live 数据再裁剪）
+
 ---
 
-**当前版本：4.6.1-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）
+**当前版本：4.6.2-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）

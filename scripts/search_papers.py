@@ -231,6 +231,15 @@ def _enrich_papers(papers):
                 p["confidence"] = "low"
         elif not p.get("confidence"):
             p["confidence"] = "medium"
+
+    # Step 3（第三轮评估②）：补被引数据，激活 validity_states 的【低影响力】枚举。
+    # 仅对非 mock 且已带 DOI 的条目查 Semantic Scholar；失败静默跳过（
+    # 保持"citation_count 缺失 → 状态【无法验证】"的既有兑底语义，不阻塞检索）。
+    try:
+        from citation_lookup import enrich_papers_with_citations
+        enrich_papers_with_citations([p for p in papers if not p.get("is_mock")])
+    except Exception as e:  # noqa: BLE001 — 被引属增强数据，任何失败都不阻塞检索主链路
+        print(f"WARNING: citation enrichment skipped ({type(e).__name__}: {e})", file=sys.stderr)
     return papers
 
 

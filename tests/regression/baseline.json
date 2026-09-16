@@ -29,5 +29,9 @@
     "_comment": "真实 LLM 自由生成的遵守率基线（P1-2）。样本放在 freeform_samples/ 目录；低于 min_pass_rate 的规则应优先裁剪。初始为空，接入真实运行数据后由 --update-baseline 填充。",
     "check_pass_rate": {}
   },
-  "_comment": "当前版本各校验项通过率基线。由 run_regression.py --update-baseline 生成；低于 min_pass_rate 的规则应优先删除或改为脚本兜底。check_pass_rate 来自黄金样本自证；freeform_check_pass_rate 来自真实 LLM 自由生成样本（空=尚未接入）。"
+  "live_baseline": {
+    "_comment": "真实 LLM 现场生成的遵守率基线（第三轮评估①，--live 产出）。这是规则裁剪（去提示词化）的最可信数据源；空=尚未跑过 --live。",
+    "check_pass_rate": {}
+  },
+  "_comment": "当前版本各校验项通过率基线。由 run_regression.py --update-baseline 生成；低于 min_pass_rate 的规则应优先删除或改为脚本兜底。check_pass_rate 来自黄金样本自证；freeform_check_pass_rate 来自已归档 LLM 样本；live_check_pass_rate 来自 --live 现场生成（真实遵守率，最可信的裁剪依据）。"
 }

@@ -71,7 +71,7 @@
         "level": "yellow",
         "valid_evidence_count": 4,
         "max_core_base_weight": 2.5,
-        "core_evidence_threshold": 2.5
+        "core_evidence_threshold": 2.0
       }
     },
     {
@@ -84,7 +84,7 @@
         "level": "green",
         "valid_evidence_count": 3,
         "max_core_base_weight": 5.0,
-        "core_evidence_threshold": 2.5
+        "core_evidence_threshold": 2.0
       }
     },
     {
@@ -108,6 +108,20 @@
       "prompt": "基于深度学习的糖尿病视网膜病变分类研究",
       "sample_path": "freeform_samples/dr-freeform-l0.md",
       "expected_min_pass_rate": 0.7
+    },
+    {
+      "id": "live-dr-l0",
+      "name": "DR 主题现场生成（L0，真实 LLM）",
+      "kind": "live",
+      "level": "L0",
+      "prompt": "基于深度学习的糖尿病视网膜病变分类研究"
+    },
+    {
+      "id": "live-flex-sensor-l2",
+      "name": "柔性传感器现场生成（L2，真实 LLM）",
+      "kind": "live",
+      "level": "L2",
+      "prompt": "柔性可穿戴传感器在健康监测中的最新进展"
     }
   ]
 }

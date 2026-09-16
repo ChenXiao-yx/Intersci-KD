@@ -390,13 +390,15 @@ L2 与 L3 的十章结构完全相同（见下文），L3 仅在文末附加 JSO
 
 **必填要素 C：有效性状态 6 枚举说明（必须在表格下方给出）**：
 - 【有效】：有 DOI + 有年份，同行评审，被引量处于合理范围，无撤稿或修正记录
-- 【低影响力】：被引量显著低于同方向中位数，或年份较早但引用极少
+- 【低影响力】：被引量显著低于同方向中位数，或年份较早但引用极少（判定依据 citation_count / influential_citation_count 字段，数据源 Semantic Scholar；无数据时禁止使用本状态，见下方兜底说明）
 - 【已被修正或质疑】：标题或摘要包含 retraction / correction / erratum 等关键词，或官方发布更正/撤稿通告
 - 【无法验证】：缺少年份或 DOI 数据，或 DOI / PMID 解析失败，无法可靠评估
 - 【待核验】：DOI 未找到或仅 PMC 链接，或年份为未来年份（year > 当前年份）；**预印本（含 arXiv: 与 DataCite 形式 10.48550/arXiv.xxx）非同行评审，一律归此状态，不计入有效核心证据、不进 core 层**
 - 【监管批准】：FDA / NMPA / CE 等监管机构批准文件（如 De Novo、510k、PMA、CE mark），按监管证据单列，进 core 层
 
-**兜底补充说明**：若检索脚本（search_papers.py / scp_tools.py）未返回具体被引数据（citation_count 字段缺失或为 null），AI 必须将对应论文的「有效性状态」统一判定为「无法验证」，不得主观臆断为「低影响力」。在支撑结论列追加短注释「缺少被引数据，默认降级处理」。
+**被引数据源（第三轮评估②，激活【低影响力】）**：`scripts/citation_lookup.py` 通过 Semantic Scholar 批量查询 `citationCount` / `influentialCitationCount`；search_papers.py 检索后自动为非 mock 条目补被引字段（SCP 工具返回被引数时以其为准）。判定标准：citation_count 显著低于同方向中位数（经验线：≥5 年前的论文 citation_count < 10，或 influential_citation_count = 0 且总被引 < 5）→ 可判【低影响力】；数据无时间可比性时以 S2 全库同年论文中位数为参照。第零章"知识密度"可凭 `influential_citation_count > 0` 从【推断】升级【确证】。
+
+**兜底补充说明**：若论文的 citation_count 字段缺失（未被 S2 收录、查询失败或预印本），AI 必须将对应论文的「有效性状态」统一判定为「无法验证」，**不得主观臆断为「低影响力」**——【低影响力】必须由真实被引数据支撑。在支撑结论列追加短注释「缺少被引数据，默认降级处理」。
 
 **必填要素 D：空检索兜底声明**：
 若本次检索结果为空（无任何相关论文或公开数据），本章标注：

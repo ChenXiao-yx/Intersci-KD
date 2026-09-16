@@ -10,7 +10,7 @@ license: MIT
 tags: [knowledge-distillation, cross-disciplinary, evidence-based, research-analysis,
   decision-support, systematic-review, evidence-gap-analysis, research-priority,
   domain-mapping, conflict-resolution]
-version: "4.6.1-skill"
+version: "4.6.2-skill"
 author: InterSci-KD Team
 created: "2025-01-01"
 updated: "2026-09-15"
@@ -67,7 +67,7 @@ output_levels:
 1. **禁止凭记忆编造权重或阈值**：必须 Read 查 evidence-rubric.md——权重 §1+§10、置信度 §2+§11、衰减 §3+§12、等级阈值 §3+§13、三选一矩阵 §14、工具映射 §9；一条证据命中多类型关键词时取权重最高者（最高 §1 RCT/FDA=5.0）。
 2. **降级路径**：rubric 不可读 → 立即降级调用 scripts/score_evidence.py；脚本也不可用才允许手算，并在第九章声明「证据计分因参考文件和脚本双重不可用采用手算」。
 
-3. **精简计分公式（仅用于速算自查，查表优先）**：单条证据得分 = 基础权重 × 置信度乘数（高 1.0/中 0.5/低 0.25）× 年份衰减因子（≤5 年 1.0，>5 年每年 -0.05，地板 0.3）。等级仅计 core 层合计：绿 ≥8.0 / 黄 4.0~7.99 / 红 <4.0；core 无单条基础权重达到核心证据门槛（全局 2.5；AI 域 1.5、硬件/材料域 2.0，单一事实源 evidence_weights.json）直接 insufficient。三选一结论矩阵见 evidence-rubric.md §14。
+3. **精简计分公式（仅用于速算自查，查表优先）**：单条证据得分 = 基础权重 × 置信度乘数（高 1.0/中 0.5/低 0.25）× 年份衰减因子（≤5 年 1.0，>5 年每年 -0.05，地板 0.3）。等级仅计 core 层合计：绿 ≥8.0 / 黄 4.0~7.99 / 红 <4.0；core 无单条基础权重达到核心证据门槛（全局 2.5；AI 域 1.5、硬件/材料/社科域 2.0，社科含经 domain_map 映射的 education/psychology，单一事实源 evidence_weights.json）直接 insufficient。三选一结论矩阵见 evidence-rubric.md §14。
 
 ---
 
