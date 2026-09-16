@@ -44,10 +44,16 @@
 from __future__ import annotations
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
 from typing import Optional
+
+# 允许从仓库根直接运行（python scripts/validate_output.py）：自举同目录进 sys.path
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
 
 from config_loader import (
     get_validity_states, get_internal_jargon, get_conclusion_options,

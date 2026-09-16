@@ -6,10 +6,16 @@ P1-1 计分签名：每次计分输出含 scored_by / scored_by_version / scored
 from __future__ import annotations
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
 from datetime import datetime
+
+# 允许从仓库根直接运行（python scripts/score_evidence.py）：自举同目录进 sys.path
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
 
 from config_loader import get_valid_domains
 

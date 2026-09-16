@@ -18,8 +18,23 @@ for p in (str(_SCRIPTS), str(_ROOT / "tests" / "regression")):
 
 import os
 
+import pytest
+
 import run_regression as rr
 import search_papers
+
+
+def _network_available():
+    """第八点评 #4：实网测试防抖——离线 CI/无网环境跳过，而不是 flaky。"""
+    import socket
+    try:
+        socket.create_connection(("api.crossref.org", 443), timeout=3).close()
+        return True
+    except OSError:
+        return False
+
+
+NET_AVAILABLE = _network_available()
 
 
 class TestDecideExitCode:
@@ -144,6 +159,8 @@ class TestProviderFallback:
 
     def test_crossref_search_real(self):
         """Crossref 实网检索返回真实 DOI 文献（无 Key、全学科）。"""
+        if not NET_AVAILABLE:
+            pytest.skip("网络不可达，跳过实网检索测试")
         from providers.base import CrossrefProvider
         papers = CrossrefProvider().search("diabetic retinopathy deep learning", 3)
         assert len(papers) >= 1
@@ -155,6 +172,8 @@ class TestProviderFallback:
 
     def test_search_fallback_returns_crossref(self):
         """search_fallback 链返回 crossref 结果。"""
+        if not NET_AVAILABLE:
+            pytest.skip("网络不可达，跳过实网检索测试")
         from providers.base import search_fallback
         papers, name = search_fallback("wearable ECG sensor", 2)
         assert name == "crossref"
@@ -162,6 +181,8 @@ class TestProviderFallback:
 
     def test_delegate_auth_error_falls_to_crossref(self):
         """无效 Key → auth_error → Crossref 兜底返回真实文献（非 mock）。"""
+        if not NET_AVAILABLE:
+            pytest.skip("网络不可达，跳过实网检索测试")
         os.environ["SCP_HUB_API_KEY"] = "invalid-test-key-12345"
         result = search_papers._try_scp_delegate("wearable ECG sensor", 2, None)
         assert result is not None

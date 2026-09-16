@@ -27,7 +27,19 @@
   },
   "freeform_baseline": {
     "_comment": "真实 LLM 自由生成的遵守率基线（P1-2）。样本放在 freeform_samples/ 目录；低于 min_pass_rate 的规则应优先裁剪。初始为空，接入真实运行数据后由 --update-baseline 填充。",
-    "check_pass_rate": {}
+    "check_pass_rate": {
+      "5": 1.0,
+      "6": 1.0,
+      "7": 1.0,
+      "8": 1.0,
+      "9": 1.0,
+      "10": 1.0,
+      "16": 1.0,
+      "18": 1.0,
+      "19": 1.0,
+      "20": 1.0,
+      "21": 1.0
+    }
   },
   "live_baseline": {
     "_comment": "真实 LLM 现场生成的遵守率基线（第三轮评估①，--live 产出）。这是规则裁剪（去提示词化）的最可信数据源；空=尚未跑过 --live。",

@@ -160,4 +160,16 @@
 
 ---
 
-**当前版本：4.7.1-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）
+
+**v4.8.0-skill（2026-09-16）：第八点评落地（执行性收口 + 数据闭环 0→1）**
+
+93. 🧪 判别效度对照落地（第八点评建议 2）：新增 tests/regression/fixtures/bad_samples/ 两个故意写坏的对照样本（黄区谎报优先整合 + 6 类硬伤 / 全空话简报）与 tests/test_bad_samples.py——黄金样本自证只证明"好的能过"，坏样本证明"坏的会掉"：黄区谎报被矩阵强校验拦截、命中 ≥3 类硬伤、quality_judge 与黄金标定差距 ≥3 分，同时黄金样本仍全绿（防过拟合）。
+94. 🛡️ composite_demo.md 接入 smoke 校验（第八点评建议 10）：新增 tests/test_composite_demo.py，三档分段各按对应档位跑全量校验（复合文档免责声明集中文末，按整体检查一次），示例文件腐化即 CI 红。
+95. 🔖 新增 scripts/bump_version.py（第八点评建议 5）：SKILL.md frontmatter / pyproject.toml / CHANGELOG 当前版本尾行 / providers UA 四处一键 bump，写入后自动跑 check_consistency；支持只读报告与 --check 模式。
+96. 🧾 check_consistency.py 两处对账扩展（第八点评建议 6/7）：① 校验项计数从 validate_output.py 源码自动推导（元组注册 + run_all 内联两种形态），README/CHECKLIST/SKILL 三处「N 项」统一对账（修复 SKILL.md 残留的"19 项"漂移）；② rubric §1 权重表与 evidence_weights.json 双向对账（全局权重列 + 域覆盖标注，反向查 domain_overrides 缺标注）。
+97. 🔧 修复仓库根直跑 ModuleNotFoundError：score_evidence.py / validate_output.py 补 sys.path 自举（与 search_papers.py 同款），此前从根目录运行必炸，只能 PYTHONPATH/runpy 绕过（DR 蒸馏实踩）。
+98. 🌐 tests/test_regression.py 三个实网测试加网络探测 skipif（第八点评建议 4）：api.crossref.org 3 秒探测不可达即 pytest.skip，离线 CI 不再 flaky。
+99. 📝 providers UA 版本残留 4.7.0 修正并纳入 bump 对账（顺带消除第五处手写版本号）。
+100. 📊 数据闭环 0→1（第八点评建议 1 的零成本部分）：首个真实用户蒸馏 L0 卡片归档 tests/regression/freeform_samples/dr-freeform-l0.md（自带来源声明：修正后遵守率上界，非原始自由生成），freeform_baseline 首次填充（11 项适用校验全部 1.0），回归 10 任务 hard_failures=0、exit=0；live 通路待可用 LLM endpoint（OPENAI_API_KEY 或 INTERNLM/COMPETITION 后端）。
+
+**当前版本：4.8.0-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）

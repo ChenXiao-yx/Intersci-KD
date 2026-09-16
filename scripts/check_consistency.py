@@ -131,6 +131,87 @@ def _check_gitignore_patterns(issues):
         issues.append(".gitignore 未包含 live_runs/（真实 LLM 输出会误提交）")
 
 
+def _derive_max_check_num():
+    """从 validate_output.py 源码推导最大校验项编号（第八点评 #6）。
+
+    校验项编号有两种注册形态：
+    - 元组注册：`(21, "21. 计分签名校验", fn)`
+    - run_all 内联：`results.append(("21. 计分签名校验", ...))`
+    两者名称字符串都形如 `"N. 名称"`，取全源码该模式的最大 N 即为总数。
+    新增第 22 项只要按任一形态注册，计数即自动跟上，无需再改三处文档。
+    """
+    src = (_SCRIPTS / "validate_output.py").read_text(encoding="utf-8")
+    nums = [int(n) for n in re.findall(r'"(\d+)\.\s', src)]
+    return max(nums) if nums else 0
+
+
+def _check_check_count_consistency(issues, expected=None):
+    """第八点评 #6：README/CHECKLIST/SKILL 三处「N 项」计数必须等于代码推导值。
+
+    此前只有 EXECUTION_CHECKLIST 一处对账且硬编码 21；现改为代码推导 + 三处统一。
+    """
+    if expected is None:
+        expected = _derive_max_check_num()
+    if expected <= 0:
+        issues.append("validate_output.py 未解析到任何校验项编号，计数推导失败")
+        return
+    root = Path(__file__).resolve().parent.parent
+    pattern = re.compile(r'(\d+)\s*项(?:编号检查|校验)')
+    for fname in ("README.md", "EXECUTION_CHECKLIST.md", "SKILL.md"):
+        fpath = root / fname
+        if not fpath.exists():
+            issues.append(f"{fname} 缺失，无法对账校验项计数")
+            continue
+        for m in pattern.finditer(fpath.read_text(encoding="utf-8")):
+            declared = int(m.group(1))
+            if declared != expected:
+                issues.append(f"{fname} 写 {declared} 项校验，与代码推导的 {expected} 项不一致")
+
+
+def _check_rubric_weights_consistency(issues, rubric_path=None, config_path=None):
+    """第八点评 #7：evidence-rubric.md §1 权重表是 evidence_weights.json 的手写镜像，双向对账。
+
+    正向：表格「权重」列 == JSON 全局值；「域覆盖」列的 domain=value == domain_overrides 实值。
+    反向：JSON domain_overrides 里每个覆盖键必须在表格行中有对应 domain=value 标注。
+    """
+    import json as _json
+    root = Path(__file__).resolve().parent.parent
+    rubric = Path(rubric_path) if rubric_path else root / "references" / "evidence-rubric.md"
+    config = Path(config_path) if config_path else _SCRIPTS / "config" / "evidence_weights.json"
+    if not rubric.exists() or not config.exists():
+        issues.append(f"权重对账失败: rubric 存在={rubric.exists()}, config 存在={config.exists()}")
+        return
+    cfg = _json.loads(config.read_text(encoding="utf-8"))
+    global_w = cfg.get("evidence_weights", {})
+    overrides = {k: v for k, v in cfg.get("domain_overrides", {}).items() if not k.startswith("_")}
+    text = rubric.read_text(encoding="utf-8")
+    seen_types = set()
+    covered_pairs = set()
+    row_re = re.compile(r"^\|\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*([\d.]+)\s*\|\s*([^|]*)\|", re.MULTILINE)
+    for m in row_re.finditer(text):
+        name, weight, cover = m.group(1), m.group(2), m.group(3)
+        if name not in global_w:
+            continue  # 「未分类默认值」行与知识图谱概念表/工具映射表不在全局权重键内
+        seen_types.add(name)
+        if abs(float(weight) - float(global_w[name])) > 1e-9:
+            issues.append(f"rubric §1 {name} 权重 {weight} 与 JSON 全局 {global_w[name]} 不一致")
+        for dm in re.finditer(r"([A-Za-z_]+)=([\d.]+)", cover):
+            dname, dval = dm.group(1), dm.group(2)
+            covered_pairs.add((dname, name))
+            expect = overrides.get(dname, {}).get(name)
+            if expect is None:
+                issues.append(f"rubric §1 {name} 标注 {dname}={dval}，但 domain_overrides 无此覆盖")
+            elif abs(float(dval) - float(expect)) > 1e-9:
+                issues.append(f"rubric §1 {name} 标注 {dname}={dval}，JSON 为 {expect}")
+    missing = set(global_w) - seen_types
+    if missing:
+        issues.append(f"rubric §1 缺少类型行: {sorted(missing)}")
+    for dname, types in overrides.items():
+        for tname in types:
+            if (dname, tname) not in covered_pairs:
+                issues.append(f"domain_overrides {dname}.{tname} 在 rubric §1 无对应域覆盖标注")
+
+
 def main():
     issues = []
 
@@ -140,14 +221,11 @@ def main():
     _check_python_syntax_compat(issues)
     _check_gitignore_patterns(issues)
 
-    # 0.5 第四轮评估 P2：EXECUTION_CHECKLIST 的校验项数量表述与实际一致
-    root = Path(__file__).resolve().parent.parent
-    checklist = root / "EXECUTION_CHECKLIST.md"
-    if checklist.exists():
-        cl_text = checklist.read_text(encoding="utf-8")
-        m21 = re.search(r"(\d+) 项编号检查", cl_text)
-        if m21 and m21.group(1) != "21":
-            issues.append(f"EXECUTION_CHECKLIST.md 写 {m21.group(1)} 项编号检查，应为 21 项")
+    # 0.5 第四轮评估 P2 + 第八点评 #6：校验项计数从代码自动推导，三处文档统一对账
+    _check_check_count_consistency(issues)
+
+    # 0.6 第八点评 #7：rubric §1 权重表与 evidence_weights.json 双向对账
+    _check_rubric_weights_consistency(issues)
 
     # 1. 检查 config JSON 文件存在且可加载
     try:
