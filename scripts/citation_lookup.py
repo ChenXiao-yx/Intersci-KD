@@ -42,7 +42,7 @@ def _request_json(url: str, data=None, headers=None) -> dict:
     """带 429/网络错误重试的 JSON GET/POST。
 
     data: Optional[bytes]（POST 请求体）；headers: Optional[dict]。类型注解不用 PEP 604 语法（pyproject requires-python >=3.8，P0-2）。失败抛 RuntimeError（由上层决定兜底）。"""
-    req = urllib.request.Request(url, data=data, headers=headers or {"User-Agent": "InterSci-KD/4.6.1"})
+    req = urllib.request.Request(url, data=data, headers=headers or {"User-Agent": "InterSci-KD/4.9.0"})
     last_err = None
     for attempt in range(MAX_RETRIES):
         try:
@@ -93,7 +93,7 @@ def lookup_by_dois(dois: List[str]) -> Dict[str, Optional[dict]]:
         url = f"{S2_BASE}/paper/batch?fields={S2_FIELDS}"
         try:
             rows = _request_json(url, data=body, headers={
-                "User-Agent": "InterSci-KD/4.6.1", "Content-Type": "application/json"})
+                "User-Agent": "InterSci-KD/4.9.0", "Content-Type": "application/json"})
         except RuntimeError:
             continue  # 整批失败：全部留 None
         for d, row in zip(chunk, rows):

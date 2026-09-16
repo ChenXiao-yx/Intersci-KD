@@ -172,4 +172,15 @@
 99. 📝 providers UA 版本残留 4.7.0 修正并纳入 bump 对账（顺带消除第五处手写版本号）。
 100. 📊 数据闭环 0→1（第八点评建议 1 的零成本部分）：首个真实用户蒸馏 L0 卡片归档 tests/regression/freeform_samples/dr-freeform-l0.md（自带来源声明：修正后遵守率上界，非原始自由生成），freeform_baseline 首次填充（11 项适用校验全部 1.0），回归 10 任务 hard_failures=0、exit=0；live 通路待可用 LLM endpoint（OPENAI_API_KEY 或 INTERNLM/COMPETITION 后端）。
 
-**当前版本：4.8.0-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）
+
+**v4.9.0-skill（2026-09-16）：第八点评 P4 快赢落地 + 推送通路打通**
+
+101. 🔖 bump 工具第五目标位：citation_lookup.py 两处 UA 纳入对账，修复 4.6.1 vs 4.7.1 版本漂移（第八点评 P4）。
+102. 📝 README 项目结构 composite_demo.md 重复行去重（第八点评 P4）。
+103. 🔌 run_regression._llm_chat 新增 Ollama 原生 /api/chat 适配（OLLAMA_BASE_URL/OLLAMA_HOST + OLLAMA_MODEL，默认 qwen2.5:7b），附离线测试验证候选链路（第八点评 P4）；「本地 Ollama 均可」名实相符。
+104. ✅ MANIFEST 误报核实豁免：recursive-include tests * 已覆盖 regression fixtures，评审误报留档不改码。
+105. 🧭 后端通路根因矩阵实测留档：internlm 域名 NXDOMAIN（阿里 DoH 权威确认）、competition 公网可达但 6443 拒绝/8443 WAF、Ollama 未装——T1 数据闭环改由「DeepSeek Key 或 Ollama」路径收口。
+106. 🚀 GitHub 推送通路打通：gh auth login（浏览器设备授权，用户亲自完成）+ gh auth setup-git，8 个积压提交（v4.6.0→v4.8.0）全部推送 origin/main。
+107. 📋 DELIVERY/痛点诊断与解决台账.html 落盘：8 痛点「根因—措施—证据—状态」四要素台账 + 风险清单 + 回滚方法。
+
+**当前版本：4.9.0-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）

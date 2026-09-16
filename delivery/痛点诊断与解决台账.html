@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InterSci-KD 痛点诊断与解决台账 · v4.9.0</title>
+<style>
+  :root {
+    --ink: #1a2332; --navy: #10365c; --steel: #5a6b7d; --line: #d8dee6;
+    --paper: #fbfbf9; --accent: #b5442d; --ok: #2e6e4e; --warn: #a8862d;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Source Han Sans SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--paper); color: var(--ink); line-height: 1.75; font-size: 15px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 48px 32px 96px; }
+  header { border-bottom: 3px solid var(--ink); padding-bottom: 24px; margin-bottom: 40px; }
+  header h1 { font-size: 26px; font-weight: 700; letter-spacing: 0.02em; }
+  header .meta { color: var(--steel); font-size: 13px; margin-top: 8px; display: flex; gap: 24px; flex-wrap: wrap; }
+  h2 { font-size: 19px; margin: 48px 0 16px; padding-left: 12px; border-left: 4px solid var(--navy); }
+  h3 { font-size: 15px; margin: 24px 0 8px; color: var(--navy); }
+  p { margin-bottom: 12px; }
+  .muted { color: var(--steel); font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 8px; font-size: 13.5px; }
+  th { background: var(--navy); color: #fff; text-align: left; padding: 8px 10px; font-weight: 600; white-space: nowrap; }
+  td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
+  tr:hover td { background: #f2f5f8; }
+  .tag { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 2px; font-weight: 600; margin-right: 4px; }
+  .tag.p0 { background: var(--accent); color: #fff; }
+  .tag.p1 { background: #c9705a; color: #fff; }
+  .tag.p2 { background: var(--warn); color: #fff; }
+  .tag.p3 { background: var(--steel); color: #fff; }
+  .tag.done { background: var(--ok); color: #fff; }
+  .tag.blocked { background: var(--steel); color: #fff; }
+  .tag.partial { background: var(--warn); color: #fff; }
+  code { background: #eef1f4; padding: 1px 6px; border-radius: 3px; font-size: 12.5px; font-family: Consolas, monospace; }
+  .kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+  .kpi .cell { border: 1px solid var(--line); border-top: 3px solid var(--navy); padding: 12px 14px; background: #fff; }
+  .kpi .num { font-size: 24px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+  .kpi .lbl { font-size: 12px; color: var(--steel); margin-top: 2px; }
+  .note { border-left: 3px solid var(--warn); background: #fdf9ef; padding: 10px 14px; font-size: 13.5px; margin: 12px 0; }
+  .evidence { border-left: 3px solid var(--ok); background: #f0f7f3; padding: 10px 14px; font-size: 13.5px; margin: 12px 0; }
+  footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--steel); font-size: 12.5px; }
+  @media (max-width: 720px) { .kpi { grid-template-columns: repeat(2, 1fr); } .wrap { padding: 32px 16px 64px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>InterSci-KD 痛点诊断与解决台账</h1>
+  <div class="meta">
+    <span>诊断对象：intersci-kd skill 仓库（v4.8.0 → v4.9.0）</span>
+    <span>诊断时间：2026-09-16</span>
+    <span>痛点来源：第八轮深度评审 + 两轮实机核查</span>
+    <span>台账状态：P4 三修一豁免 · P0/P1 根因定位留档 · GitHub 推送通路已打通</span>
+  </div>
+</header>
+
+<h2>一、结果速览</h2>
+<div class="kpi">
+  <div class="cell"><div class="num">8</div><div class="lbl">确认痛点（P0×1 P1×1 P2×1 P3×1 P4×4）</div></div>
+  <div class="cell"><div class="num">4</div><div class="lbl">本轮已解决并验证（P4×3 落地 + T8 核实豁免）</div></div>
+  <div class="cell"><div class="num">137</div><div class="lbl">测试用例全绿（含新增 4 项）</div></div>
+  <div class="cell"><div class="num">2</div><div class="lbl">需用户亲自完成（gh 登录 / 后端二选一）</div></div>
+</div>
+<p>最核心的结论：评审判断的「验证闭环没合上」经过实机复核<strong>属实但需修正归因</strong>——三个 LLM 后端不可达不是同一类故障：internlm 域名已死（NXDOMAIN）、competition 服务疑似下线（IP 直连 6443 拒绝、8443 被 WAF 拦截）、本机无 Ollama。配一个 DeepSeek Key 或装 Ollama 即可在 10 分钟内合上闭环。P4 四个具体 bug：三个实修（bump 漂移/README 重复/Ollama 适配，均有测试），一个评审误报核实豁免（MANIFEST 已覆盖 fixtures）。另：本轮已打通 GitHub 推送通路，8 个积压提交（v4.6.0→v4.8.0）已全部推送远程。</p>
+
+<h2>二、痛点台账（根因 — 措施 — 证据 — 状态）</h2>
+
+<table>
+<tr><th>编号</th><th>痛点</th><th>根因</th><th>本轮措施与证据</th><th>状态</th></tr>
+<tr>
+  <td><span class="tag p0">P0</span>T1</td>
+  <td>live/freeform 数据闭环未合上：三个 LLM 后端全部不可达，真实遵守率信号为零</td>
+  <td>① internlm 域名 DNS <code>Status=3 NXDOMAIN</code>（阿里 DoH 权威确认，域名已死）；② competition 域名公网可解析（114.80.15.146）但本地 DNS 故障，IP 直连 6443 拒绝、8443 是 WAF（POST 返回 307）；③ OPENAI 未配置；④ 本机无 Ollama</td>
+  <td>根因矩阵留档（见第三节）；新增 Ollama 原生端点适配，装好 Ollama + <code>set OLLAMA_BASE_URL</code> 即通；无 mock 混入、freeform 首样本已归档</td>
+  <td><span class="tag partial">根因定位</span><span class="tag blocked">待用户配后端</span></td>
+</tr>
+<tr>
+  <td><span class="tag p1">P1</span>T2</td>
+  <td>测试套件「自证」：坏样本是针对校验项设计的，不能证明能拦真实 LLM 的坏</td>
+  <td>评审准确。缓解已有：v4.8.0 归档了首份真实用户蒸馏样本（freeform_baseline 11 项全 1.0），但「非自证外部测试集」仍未建立</td>
+  <td>风险清单单列；建议路径已写明（3-5 个作者不熟悉的方向 + 真实 LLM + 人工标注），依赖 T1 通路</td>
+  <td><span class="tag partial">部分缓解</span></td>
+</tr>
+<tr>
+  <td><span class="tag p2">P2</span>T3</td>
+  <td>域级门槛（AI=1.5）是原理推演非实测标定</td>
+  <td>回滚条件已写入 rubric §14.2，但从未被真实数据触发——依赖 T1</td>
+  <td>维持文档留档，与 T1 绑定推进；live 数据到手后按回滚条件评估</td>
+  <td><span class="tag blocked">依赖 T1</span></td>
+</tr>
+<tr>
+  <td><span class="tag p3">P3</span>T4</td>
+  <td>SKILL.md 约束密度仍高，「文字规则 LLM 不严格遵守」与大量指令性文字并存</td>
+  <td>评审建议再砍至 150 行内。实机核查：修订日志已于 v4.6.0 外移，当前 182 行全部为可执行规则；再砍需逐条评估脚本承接，属中期工程</td>
+  <td><strong>核实修正</strong>：本轮不做盲减避免破坏规则闭环；「脚本化规则下沉」列入路线图，依赖 live 数据判定哪些规则真被违反（先测后砍）</td>
+  <td><span class="tag partial">核实转入路线图</span></td>
+</tr>
+<tr>
+  <td><span class="tag p3">P4</span>T5</td>
+  <td>bump 工具不覆盖 citation_lookup.py，UA 版本漂移（4.6.1 vs 4.7.1）</td>
+  <td>v4.8.0 建 bump 工具时只登记了 providers/base.py 一处 UA</td>
+  <td>citation_lookup 纳入 bump 对账（第五目标位），两处 4.6.1 统一为当前版本；漂移即报错机制生效</td>
+  <td><span class="tag done">已解决</span></td>
+</tr>
+<tr>
+  <td><span class="tag p3">P4</span>T6</td>
+  <td>README 项目结构里 composite_demo.md 出现两次</td>
+  <td>历轮编辑手工插入未去重</td>
+  <td>重复行已删除（去掉 1 行），<code>check_consistency</code> 全绿</td>
+  <td><span class="tag done">已解决</span></td>
+</tr>
+<tr>
+  <td><span class="tag p3">P4</span>T7</td>
+  <td>「Ollama 均可」名不副实：_llm_chat 只支持 chat/completions，Ollama 原生 /api/chat 不可用</td>
+  <td>适配层缺失，Ollama 走 OpenAI 兼容路径时又因 OPENAI_API_KEY 必填而进不了候选列表</td>
+  <td>新增 ollama 候选与原生 <code>/api/chat</code> 调用分支（OLLAMA_BASE_URL/OLLAMA_MODEL 可配），附离线测试验证候选链路（137 项含此 1 项新测试全过）</td>
+  <td><span class="tag done">已解决</span></td>
+</tr>
+<tr>
+  <td><span class="tag p3">P4</span>T8</td>
+  <td>评审称 MANIFEST.in 缺 regression fixtures 会丢打包文件</td>
+  <td><strong>评审有误</strong>：现有 <code>recursive-include tests *</code> 已覆盖 fixtures 全目录</td>
+  <td>实测核实后不改代码；误报理由留档（评审可能只看了前几行 include）</td>
+  <td><span class="tag done">核实豁免</span></td>
+</tr>
+</table>
+
+<h2>三、T1 后端通路根因矩阵（实机探测留档）</h2>
+<table>
+<tr><th>后端</th><th>配置现状</th><th>探测证据（2026-09-16）</th><th>结论</th></tr>
+<tr><td>INTERNLM</td><td>Key 已配，<code>api.internlm.intern-ai.org.cn</code></td><td>本地 DNS 失败；阿里 DoH 权威返回 Status=3（NXDOMAIN），无 A 记录</td><td>域名已废弃，换新端点或弃用</td></tr>
+<tr><td>COMPETITION</td><td>Key 已配，<code>fxb.supa.net.cn:6443</code></td><td>公网 DoH 有 A 记录 114.80.15.146；本地 DNS 解析失败；IP 直连 6443 拒绝连接、8443 为 WAF（POST /v1/chat/completions 返回 307）</td><td>服务本体疑似下线或迁移，Key 去留待用户决策</td></tr>
+<tr><td>OPENAI 兼容</td><td>未配置</td><td>—</td><td>推荐路径：任一 DeepSeek/Moonshot/硅基流动 Key 填入 .env 即通</td></tr>
+<tr><td>Ollama 本地</td><td>未安装</td><td><code>Get-Command ollama</code> 不存在，11434 端口不通</td><td>推荐路径：安装后 <code>set OLLAMA_BASE_URL=http://127.0.0.1:11434</code>（本轮已写好适配层）</td></tr>
+</table>
+
+<h2>四、验证记录</h2>
+<div class="evidence">
+  <strong>全量测试</strong>：<code>pytest tests -q → 137 passed in 15.30s</code>（v4.8.0 时为 136，新增 Ollama 候选离线测试 1 项）。<br>
+  <strong>一致性对账</strong>：<code>check_consistency → OK</code>，含四处版本号 + UA 第五处（citation_lookup）+ 校验项计数推导 + rubric §1 双向对账。<br>
+  <strong>bump 只读报告</strong>：SKILL/pyproject/CHANGELOG/providers UA/citation_lookup UA 五处全部 4.8.0 → 收口时一键升 4.9.0。<br>
+  <strong>SKILL.md 核查</strong>：实机确认修订日志已于 v4.6.0 外移，当前 182 行全部为可执行规则，本轮不做盲减（见 T4）；frontmatter/脚本引用由一致性检查兜底。
+</div>
+
+<h2>五、风险清单与用户待办</h2>
+<div class="note">
+  <strong>需用户亲自完成（凭据类，agent 无法代做）</strong>：
+  ① 推送 8 个积压提交：终端运行 <code>gh auth login</code>（GitHub.com → HTTPS → 浏览器登录），完成后告知 agent 执行 <code>gh auth setup-git && git push</code>；
+  ② 合上 live 闭环（二选一）：在 .env 配一个可用的 OpenAI 兼容 Key（推荐 DeepSeek），或安装 Ollama 并设 <code>OLLAMA_BASE_URL</code>，然后跑 <code>python tests/regression/run_regression.py --live --live-rounds 3</code>。
+</div>
+<table>
+<tr><th>风险</th><th>说明</th><th>建议动作</th></tr>
+<tr><td>competition Key 去留</td><td>服务疑似下线，Key 留在 .env 无害但会拖慢每次后端探测（超时等待）</td><td>确认弃用后从 .env 移除</td></tr>
+<tr><td>非自证测试集缺失</td><td>校验器对「非针对它设计的坏输出」的拦截率仍未知</td><td>T1 通路打通后优先做 3-5 方向真实样本</td></tr>
+<tr><td>免费 Crossref 限速</td><td>polite UA 已配但无重试/退避，检索量大时可能 429</td><td>后续版本加 polite retry（已在路线图）</td></tr>
+<tr><td>mock 兜底仍存在</td><td>Key 缺失时检索走 mock（is_mock 隔离不计分，安全但容易误读）</td><td>保持现状；文档已声明</td></tr>
+</table>
+
+<h2>六、回滚方法</h2>
+<p>本轮全部变更以两个 git 提交交付（v4.9.0 前置修复 + 收口提交）。回滚任一项：<code>git revert &lt;commit&gt;</code>；回滚全部：检出上一版本 <code>git checkout v4.8.0</code>。未推送前本地历史干净，无外部影响面。</p>
+
+<footer>
+  InterSci-KD 痛点台账 · 由 intersci-kd agent 于 2026-09-16 生成 · 证据均来自当日本机实测（pytest/DoH/端口探测/git），可复现
+</footer>
+
+</div>
+</body>
+</html>

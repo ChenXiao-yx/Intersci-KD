@@ -188,6 +188,13 @@ def _llm_chat(prompt: str, max_tokens: int = 4096, temperature: float = 0.3) -> 
         candidates.append(("competition", os.environ.get("COMPETITION_BASE_URL", ""),
                            os.environ["COMPETITION_API_KEY"], os.environ.get("COMPETITION_MODEL", "")))
     # 通用 OpenAI 兼容端点兜底（第六点评 P0 路径 A）：DeepSeek/Moonshot/本地 vLLM/Ollama 均可
+    # Ollama 原生 /api/chat 适配（第八点评 P4）：无鉴权、响应结构不同。
+    # 若 OLLAMA_BASE_URL 以 /v1 结尾会自然走 OpenAI 兼容路径，但 OPENAI_API_KEY 缺失时
+    # 不建 OPENAI 候选，因此这里单独兜底原生端点；模型默认 qwen2.5:7b 可用 OLLAMA_MODEL 覆盖。
+    _ollama_base = (os.environ.get("OLLAMA_BASE_URL") or os.environ.get("OLLAMA_HOST") or "").rstrip("/")
+    if _ollama_base and not _ollama_base.endswith("/v1"):
+        candidates.append(("ollama", _ollama_base, "ollama",
+                           os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")))
     if os.environ.get("OPENAI_API_KEY"):
         candidates.append(("openai", os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
                            os.environ["OPENAI_API_KEY"], os.environ.get("OPENAI_MODEL", "gpt-4o-mini")))
@@ -201,6 +208,15 @@ def _llm_chat(prompt: str, max_tokens: int = 4096, temperature: float = 0.3) -> 
         if not base_url or not api_key:
             continue
         try:
+            if name == "ollama":
+                resp = requests.post(
+                    f"{base_url}/api/chat",
+                    json={"model": model, "stream": False, "temperature": temperature,
+                          "messages": [{"role": "user", "content": prompt}]},
+                    timeout=180,
+                )
+                resp.raise_for_status()
+                return resp.json()["message"]["content"]
             resp = requests.post(
                 f"{base_url.rstrip('/')}/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},

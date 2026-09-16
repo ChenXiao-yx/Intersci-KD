@@ -6,6 +6,7 @@
   2. pyproject.toml              version = "X.Y.Z"
   3. CHANGELOG.md 尾行           **当前版本：X.Y.Z-skill**
   4. scripts/providers/base.py   UA = "InterSci-KD/X.Y.Z (...)"
+  5. scripts/citation_lookup.py  UA（两处，v4.9.0 起纳入，修漂移）
 
 用法：
     python scripts/bump_version.py                 # 只读报告（四处当前版本 + 是否统一）
@@ -38,6 +39,9 @@ TARGETS = [
     ("scripts/providers/base.py",
      r"(InterSci-KD/)([\d.]+)",
      "providers/base.py UA"),
+    ("scripts/citation_lookup.py",
+     r"(InterSci-KD/)([\d.]+)",
+     "citation_lookup.py UA（两处一次改齐）"),
 ]
 
 

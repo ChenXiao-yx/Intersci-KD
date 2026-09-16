@@ -148,6 +148,18 @@ class TestContentQuality:
 
 
 
+class TestOllamaCandidate:
+    """第八点评 P4：_llm_chat 的 Ollama 原生端点适配（离线可测）。"""
+
+    def test_ollama_candidate_attempted_without_other_backends(self, monkeypatch):
+        """仅配 OLLAMA_BASE_URL 时，_llm_chat 必须尝试 ollama 候选（此处用必拒端口验证报错链路）。"""
+        monkeypatch.setenv("OLLAMA_BASE_URL", "http://127.0.0.1:9")  # discard 端口，必然拒绝连接
+        monkeypatch.delenv("LLM_BACKEND", raising=False)
+        with pytest.raises(RuntimeError) as ei:
+            rr._llm_chat("ping", max_tokens=8)
+        assert "ollama" in str(ei.value), f"报错应包含 ollama 尝试记录，实际: {ei.value}"
+
+
 class TestProviderFallback:
     """第六点评 P1：Crossref 真实检索兜底（解 SCP 单点依赖）。"""
 

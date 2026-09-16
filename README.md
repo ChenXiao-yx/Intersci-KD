@@ -161,7 +161,6 @@ intersci-kd-skill/
     ├── brief_output_golden.score.json
     ├── empty_retrieval_golden.md  # 空检索兜底场景黄金样本
     └── composite_demo.md          # L0→L1→L2 三档连续输出演示（不参与 CI；档位校验以三份单档黄金样本为准）
-    └── composite_demo.md          # L0→L1→L2 三档连续输出演示（不参与 CI；档位校验以三份单档黄金样本为准）
 ```
 
 ## 回归与遵守率度量

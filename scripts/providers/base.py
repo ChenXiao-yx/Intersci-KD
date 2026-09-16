@@ -20,7 +20,7 @@ from typing import Optional
 # Crossref REST API：免费、无 Key、全学科 DOI 元数据
 CROSSREF_API = "https://api.crossref.org/works"
 REQUEST_TIMEOUT = 20
-UA = "InterSci-KD/4.8.0 (mailto:intersci-kd@users.noreply.github.com)"
+UA = "InterSci-KD/4.9.0 (mailto:intersci-kd@users.noreply.github.com)"
 
 
 class EvidenceProvider:
