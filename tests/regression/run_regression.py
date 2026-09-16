@@ -303,6 +303,8 @@ def main() -> int:
                         help="真实 LLM 回归循环（第三轮评估①）：对 live 任务现场调用 LLM 生成并校验，测出真实遵守率")
     parser.add_argument("--live-only", action="store_true", help="仅跑 live 任务（跳过黄金样本自证任务，配合 --live）")
     parser.add_argument("--live-rounds", type=int, default=1, help="每个 live 任务的采样轮数（默认 1，多轮更稳）")
+    parser.add_argument("--live-allow-llm-error", action="store_true",
+                        help="后端不可达（llm_error）时不置退出码 1——CI 无稳定后端时用此开关把 live 放独立 job")
     args = parser.parse_args()
 
     tasks_doc = json.loads((REG_DIR / "tasks.json").read_text(encoding="utf-8"))
@@ -430,6 +432,9 @@ def main() -> int:
 
     any_fail = any(tr["hard_failures"] > 0 for tr in task_results)
     live_llm_error = any(tr.get("status") == "llm_error" for tr in live_results)
+    if live_llm_error and getattr(args, "live_allow_llm_error", False):
+        print("注意: --live-allow-llm-error 生效，后端不可达不置退出码 1", file=sys.stderr)
+        live_llm_error = False
     # live 的 hard_failures 是真实 LLM 违规数据（本身是交付物，不影响退出码）；退出码只看 llm_error。
     return 1 if (any_fail or below_threshold or regressions or live_llm_error) else 0
 

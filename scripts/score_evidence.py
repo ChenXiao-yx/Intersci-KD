@@ -12,7 +12,7 @@ from datetime import datetime
 
 from config_loader import get_valid_domains
 
-__version__ = "4.6.2"
+__version__ = "4.6.3"
 
 # 标准 DOI 正则：10.XXXX/...（XXXX 至少 4 位数字）
 # 用于 has_doi 判定，避免把 "DEN180001"、"10.0000/mock" 等非标准编号当 DOI

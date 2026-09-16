@@ -29,6 +29,9 @@ HEARTBEAT.md
 MEMORY.md
 memory/
 
+# 真实 LLM live 运行数据（第三轮评估①，未经审查的 LLM 原始输出禁止入库）
+tests/regression/live_runs/
+
 # 内部验收报告与本地文档
 docs/
 

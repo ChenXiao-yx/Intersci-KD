@@ -119,6 +119,16 @@
 62. ⚖️ 评估第 3 项——域级门槛公平性：core_evidence_threshold_by_domain 补 social=2.0（education/psychology 经 domain_map 映射继承），消除社科域"20 篇队列研究仍 insufficient"的系统性误判；rubric §14.2 理由表补 social 行、SKILL.md 门槛句同步、回归 tasks 期望值（psych/edu core_evidence_threshold→2.0，psych 的 max_core_base_weight 2.5 实为 Meta_analysis 全局权重不受门槛影响）；knowledge 域以 Industry_standard(3.0) 为主无需降，维持全局 2.5
 63. 📄 其余 5 项按评估意见不修（工具数正则已有 CI/CHANGELOG 对账已自动化/空检索样本影响面小/DOI 真伪是能力边界已有免责/规则总量待 live 数据再裁剪）
 
+**v4.6.3-skill（2026-09-16）：第四轮评估修复（P0×3 + P2×2，P1 待后端）**
+
+64. 🔖 P0-1 SKILL.md 内部版本不一致：末尾"版本历史"段写死"当前版本 4.6.0-skill"（历轮 bump 未覆盖）——按评估方案 A 删除该段改为 CHANGELOG 一行指针（单一事实源原则），并用全仓扫描确认无其它陈旧版本号
+65. 🐍 P0-2 Python 兼容性：citation_lookup.py 的 PEP 604 语法（bytes | None / dict | None）在 3.8/3.9 直接 TypeError，与 pyproject requires-python>=3.8 矛盾——改回 Optional 风格参数注解；全仓扫描确认无其它 PEP604 残留
+66. 📄 P0-3 EXECUTION_CHECKLIST 文档漂移：删除与顶部快速通道重复的旧 1b 档位表（旧表独有的"精简/继续"行并入快速通道表）；"20 项编号检查"改"21 项"
+67. 🧪 P2-1 live_runs/ 入 .gitignore：tests/regression/live_runs/ 是未经审查的 LLM 原始输出（真实运行数据），误提交会污染仓库
+68. 🧪 P2-2 CHECKLIST 纳入 check_consistency.py 对账：校验项数量表述非 21 即 FAIL——评估指出的"校验器盲区"（文档漂移 CI 抓不到）部分闭合；SKILL.md 版本行因 P0-1 删段不再需要对账
+69. 🔀 P1-4（评估第四节机制问题）：--live 新增 --live-allow-llm-error 开关（后端不可达不置退出码 1）；README 明确 CI 使用建议（--live 放独立 job或用该开关）。实测：--live-allow-llm-error EXIT=0 / strict EXIT=1
+70. ⏳ P1-1/P1-2（跑 live 拿真实数据 + 据此裁剪规则）仍待可用 LLM 后端——两个 .env 后端均不可达的现状未变，这是当前唯一无法在本地闭环的事项
+
 ---
 
-**当前版本：4.6.2-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）
+**当前版本：4.6.3-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）

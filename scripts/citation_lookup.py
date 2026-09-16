@@ -37,8 +37,10 @@ MAX_RETRIES = 3
 RETRY_BASE_DELAY = 5
 
 
-def _request_json(url: str, data: bytes | None = None, headers: dict | None = None) -> dict:
-    """带 429/网络错误重试的 JSON GET/POST。失败抛 RuntimeError（由上层决定兜底）。"""
+def _request_json(url: str, data=None, headers=None) -> dict:
+    """带 429/网络错误重试的 JSON GET/POST。
+
+    data: Optional[bytes]（POST 请求体）；headers: Optional[dict]。类型注解不用 PEP 604 语法（pyproject requires-python >=3.8，P0-2）。失败抛 RuntimeError（由上层决定兜底）。"""
     req = urllib.request.Request(url, data=data, headers=headers or {"User-Agent": "InterSci-KD/4.6.1"})
     last_err = None
     for attempt in range(MAX_RETRIES):
@@ -104,7 +106,7 @@ def lookup_by_dois(dois: list[str]) -> dict[str, dict | None]:
     return result
 
 
-def enrich_papers_with_citations(papers: list[dict], existing: dict | None = None) -> dict:
+def enrich_papers_with_citations(papers: list[dict], existing=None) -> dict:
     """给 papers 列表补 citation_count / influential_citation_count 字段。
 
     返回 lookup 结果 dict（{doi: row|None}），供调用方持久化复用。

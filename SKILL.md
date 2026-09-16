@@ -10,7 +10,7 @@ license: MIT
 tags: [knowledge-distillation, cross-disciplinary, evidence-based, research-analysis,
   decision-support, systematic-review, evidence-gap-analysis, research-priority,
   domain-mapping, conflict-resolution]
-version: "4.6.2-skill"
+version: "4.6.3-skill"
 author: InterSci-KD Team
 created: "2025-01-01"
 updated: "2026-09-15"
@@ -179,6 +179,4 @@ A→扩年限+扩关键词重检索，仍<0.5 提示选 B/C；B→等用户贴�
 
 ---
 
-# 版本历史
-
-完整修订日志见 [CHANGELOG.md](CHANGELOG.md)。当前版本 4.6.0-skill，与 pyproject.toml 一致（scripts/check_consistency.py 对账）。
+完整修订日志见 [CHANGELOG.md](CHANGELOG.md)（当前版本以其中「当前版本」行与 scripts/check_consistency.py 对账为准）。

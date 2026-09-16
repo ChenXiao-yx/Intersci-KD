@@ -97,6 +97,15 @@ def main():
     _check_version_consistency(issues)
     _check_tool_count_consistency(issues)
 
+    # 0.5 第四轮评估 P2：EXECUTION_CHECKLIST 的校验项数量表述与实际一致
+    root = Path(__file__).resolve().parent.parent
+    checklist = root / "EXECUTION_CHECKLIST.md"
+    if checklist.exists():
+        cl_text = checklist.read_text(encoding="utf-8")
+        m21 = re.search(r"(\d+) 项编号检查", cl_text)
+        if m21 and m21.group(1) != "21":
+            issues.append(f"EXECUTION_CHECKLIST.md 写 {m21.group(1)} 项编号检查，应为 21 项")
+
     # 1. 检查 config JSON 文件存在且可加载
     try:
         validity = get_validity_states()

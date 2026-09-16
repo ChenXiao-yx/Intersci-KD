@@ -174,6 +174,9 @@ python tests/regression/run_regression.py --live --baseline tests/regression/bas
 python tests/regression/run_regression.py --live --live-only      # 只跑 live 任务
 python tests/regression/run_regression.py --live --live-rounds 3  # 每任务采样 3 轮（更稳）
 
+# CI 提示：--live 需要可用的 LLM 后端；后端不可达时任务标记 llm_error并使退出码为 1。
+# 无稳定后端的 CI 应把 --live 放在独立 job（不与主回归混合），或加 --live-allow-llm-error 容忍后端故障。
+
 # 交付物/证据变更后重写基线（跨年重跑计分会因年份衰减微降，也可借此重新锚定；
 # --live 后重写会把 live_baseline 一起更新）
 python tests/regression/run_regression.py --update-baseline
