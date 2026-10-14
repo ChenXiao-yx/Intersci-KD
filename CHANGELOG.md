@@ -183,4 +183,10 @@
 106. 🚀 GitHub 推送通路打通：gh auth login（浏览器设备授权，用户亲自完成）+ gh auth setup-git，8 个积压提交（v4.6.0→v4.8.0）全部推送 origin/main。
 107. 📋 DELIVERY/痛点诊断与解决台账.html 落盘：8 痛点「根因—措施—证据—状态」四要素台账 + 风险清单 + 回滚方法。
 
-**当前版本：4.9.0-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）
+**v4.9.1-skill（2026-10-14）：仓库整理 + 部署同步（基于独立全面点评，3 项）**
+
+108. 🗑️ 工作区根目录去非项目文件：删除 OpenClaw 人设/配置文件（AGENTS/SOUL/USER/IDENTITY/HEARTBEAT/TOOLS.md——.gitignore 已标注「不属于本 skill，不开源」）、.openclaw/ 临时探针产物、全仓 __pycache__ 与空 .opencode/。根目录现仅含项目文件与 .env（密钥，gitignore 覆盖）。
+109. 📁 debug-evidence-audit-runtime.md 归档至 docs/debug/（docs/ 本就是 gitignore 的内部文档目录）；.gitignore 移除根目录专属条目，新位置由 docs/ 规则覆盖。
+110. 🚀 部署同步（点评 P0）：已安装副本（~/.trae-cn/skills/intersci-kd）长期滞留 v4.5.1 时代旧版（532 行 SKILL.md、无 tests/config/providers/quality_judge），按「已安装副本必须与工作区同源」原则 robocopy 镜像同步（排除 .git/.env/缓存），同步后在安装目录跑 check_consistency 验收。
+
+**当前版本：4.9.1-skill**（与 SKILL.md frontmatter、pyproject.toml 三处一致，由 scripts/check_consistency.py 对账；变更历史只追加不改写）

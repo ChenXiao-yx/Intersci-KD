@@ -121,6 +121,18 @@ def search(query, top_k, domain, force_real=False):
         return _enrich_papers(papers)
     elif _SCP_AVAILABLE:
         tool_name = _DOMAIN_TOOL_MAP.get(domain or "", "origene-search")
+        # 第六点评 P1：无 Key / Key 无效时 call_gateway 走 sciverse fallback 仍会落到 mock，
+        # 产生 mock 前先试 Crossref 真实检索——能拿到真文献就不给假数据。
+        try:
+            from providers.base import search_fallback
+            xr_papers, xr_name = search_fallback(query, top_k, domain)
+            if xr_papers:
+                print(f"INFO [provider_fallback]: SCP 不可用，已用 {xr_name} 返回真实检索结果。", file=sys.stderr)
+                for i, p in enumerate(xr_papers, 1):
+                    p["rank"] = i
+                return _enrich_papers(xr_papers)
+        except Exception as e:  # noqa: BLE001 — provider 失败继续走 mock
+            print(f"WARNING: provider fallback failed ({type(e).__name__}: {e})", file=sys.stderr)
         result = build_mock_result(tool_name, query, top_k)
         papers = result.get("papers", [])
         for i, p in enumerate(papers, 1):

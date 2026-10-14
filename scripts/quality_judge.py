@@ -110,7 +110,7 @@ def heuristic_score(text: str) -> dict:
         "q3": score_dim(ch8, 0.12, 1, action_weight=1),
         "q4": score_dim(ch9, 0.18, 1),
         "q5": {"score": 2 if ("若" in ch9 or "上调" in ch9 or "下调" in ch9) else 0,
-               "reason": "含升降级条件" if ("若" in ch9 or "上调" in ch9) else "无可证伪条件"},
+               "reason": "含升降级条件" if ("若" in ch9 or "上调" in ch9 or "下调" in ch9) else "无可证伪条件"},
     }
     out["overall"] = sum(v["score"] for v in out.values())
     out["mode"] = "heuristic"

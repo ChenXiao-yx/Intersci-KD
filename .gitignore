@@ -13,9 +13,8 @@ venv/
 .tmp_*.json
 .tmp_*
 
-# IDE / 内部开发产物（不开源）
+# IDE / 内部开发产物（不开源；运行期诊断文档已归档 docs/debug/，由下方 docs/ 规则覆盖）
 .trae/
-debug-evidence-audit-runtime.md
 
 # OpenClaw 本地工作区文件（agent 人设/配置/临时产物，不属于本 skill，不开源）
 .openclaw/
